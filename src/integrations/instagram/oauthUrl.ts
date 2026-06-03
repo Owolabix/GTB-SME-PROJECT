@@ -22,6 +22,9 @@ export function buildMetaOAuthUrlForInstagram(
     state: stateUserId,
     response_type: "code",
     scope: SCOPES.join(","),
+    // Prefer full www.facebook.com dialog; mobile browsers otherwise use m.facebook.com
+    // which can show "Feature Unavailable" while the app is in Development / under review.
+    display: "page",
   });
   return `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`;
 }

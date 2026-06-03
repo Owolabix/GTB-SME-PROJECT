@@ -66,7 +66,7 @@ function decodeOAuthErrorDescription(value: string): string {
 }
 
 const MERCHANT_META_UNAVAILABLE_HINT =
-  "We couldn't connect Instagram because Facebook login is temporarily unavailable. Please try again in a little while. If it keeps failing, contact support.";
+  "We couldn't connect Instagram because Facebook login is temporarily unavailable on mobile. Try your browser's desktop mode, or use a computer, then try again. If it keeps failing, contact support.";
 
 const MERCHANT_META_ACCESS_HINT =
   "We couldn't connect Instagram with this Facebook account. Use the Facebook login that manages your Instagram business or creator profile, then try again. If it still fails, contact support.";
@@ -413,6 +413,11 @@ function IntegrationsPage() {
               <p className="text-sm text-muted-foreground">
                 Sign in with the Facebook account that manages your Page linked to Instagram. You only need to do this
                 once.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                On iPhone or Android, if Facebook says login is unavailable, open your browser menu and turn on{" "}
+                <span className="font-medium text-foreground">Desktop site</span> or{" "}
+                <span className="font-medium text-foreground">Request desktop website</span>, then try again.
               </p>
             </div>
           </div>
