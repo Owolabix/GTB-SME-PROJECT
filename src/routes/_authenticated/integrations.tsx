@@ -65,9 +65,33 @@ function decodeOAuthErrorDescription(value: string): string {
   }
 }
 
-/** Human hint when Meta shows “app not active” / “not accessible” (dashboard config, not this repo). */
+const MERCHANT_META_UNAVAILABLE_HINT =
+  "We couldn't connect Instagram because Facebook login is temporarily unavailable. Please try again in a little while. If it keeps failing, contact support.";
+
+const MERCHANT_META_ACCESS_HINT =
+  "We couldn't connect Instagram with this Facebook account. Use the Facebook login that manages your Instagram business or creator profile, then try again. If it still fails, contact support.";
+
+const DEV_META_UNAVAILABLE_APPENDIX =
+  "Developer note: Meta has paused Facebook Login while the app has pending setup or review. In developers.facebook.com resolve Alerts / Required actions, complete Settings → Basic (Privacy Policy URL, contact email), finish Data Use Checkup or Business verification if prompted, and add test Facebook accounts under App roles if the app is in Development mode. Retry in desktop Safari/Chrome first.";
+
+const DEV_META_ACCESS_APPENDIX =
+  "Developer note: In Development mode only App roles (Administrator, Developer, or Tester) can use Facebook Login. Add your Facebook account under App roles, complete App Review and switch to Live for all merchants, and confirm Settings → Basic (e.g. Privacy Policy URL).";
+
+/** Extra hint after Meta OAuth redirect errors — merchant-safe; dev details only in local builds. */
 function metaAppAccessHint(oauthError: string, description: string): string | null {
   const blob = `${oauthError} ${description}`.toLowerCase();
+  const isDev = import.meta.env.DEV;
+
+  if (
+    blob.includes("feature unavailable") ||
+    blob.includes("updating additional details") ||
+    blob.includes("try again later")
+  ) {
+    return isDev
+      ? `${MERCHANT_META_UNAVAILABLE_HINT}\n\n${DEV_META_UNAVAILABLE_APPENDIX}`
+      : MERCHANT_META_UNAVAILABLE_HINT;
+  }
+
   if (
     !blob.includes("not accessible") &&
     !blob.includes("not active") &&
@@ -76,7 +100,10 @@ function metaAppAccessHint(oauthError: string, description: string): string | nu
   ) {
     return null;
   }
-  return "While the Meta app is in Development mode, only Facebook accounts added under App roles (Administrator, Developer, or Tester) can use Facebook Login. Add your personal Facebook account there, or complete App Review and switch the app to Live mode for everyone else. Also confirm Settings → Basic has required fields saved (for example Privacy Policy URL).";
+
+  return isDev
+    ? `${MERCHANT_META_ACCESS_HINT}\n\n${DEV_META_ACCESS_APPENDIX}`
+    : MERCHANT_META_ACCESS_HINT;
 }
 
 function IntegrationsPage() {
@@ -157,7 +184,7 @@ function IntegrationsPage() {
     void navigate({ to: "/integrations", replace: true, search: {} }).then(() => {
       setBanner({
         variant: "destructive",
-        title: "Meta blocked the login",
+        title: "Couldn't connect Instagram",
         body,
       });
     });

@@ -91,6 +91,33 @@ const setupNav = [
   { to: "/onboarding" as const, label: "Store setup", icon: Store },
 ];
 
+function UserSidebarFooter({
+  email,
+  onSignOut,
+}: {
+  email: string | null;
+  onSignOut: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-xl border border-primary/15 bg-primary-soft/35 p-3">
+      <div className="min-w-0 space-y-1 px-1 text-left">
+        <p className="truncate text-sm font-medium leading-tight text-foreground">
+          {email ?? "Loading…"}
+        </p>
+        <p className="text-xs leading-tight text-muted-foreground">GTCO SME customer</p>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onSignOut}
+        className="mt-3 w-full justify-center gap-2 rounded-xl border-destructive/40 bg-destructive/5 font-semibold text-destructive shadow-sm hover:bg-destructive/10 hover:text-destructive"
+      >
+        <LogOut className="h-4 w-4 shrink-0" /> Sign out
+      </Button>
+    </div>
+  );
+}
+
 function AuthLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -167,18 +194,7 @@ function AuthLayout() {
                 );
               })}
             </nav>
-            <div className="mt-4 rounded-xl border border-primary/15 bg-primary-soft/35 p-3 text-xs">
-              <div className="font-medium text-foreground truncate">{email ?? "Loading…"}</div>
-              <div className="text-muted-foreground">GTCO SME customer</div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={signOut}
-                className="mt-2 w-full justify-start text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="mr-2 h-4 w-4" /> Sign out
-              </Button>
-            </div>
+            <UserSidebarFooter email={email} onSignOut={signOut} />
           </SheetContent>
         </Sheet>
       </header>
@@ -210,18 +226,7 @@ function AuthLayout() {
               );
             })}
           </nav>
-          <div className="mt-4 rounded-xl border border-primary/15 bg-primary-soft/35 p-3 text-xs">
-            <div className="font-medium text-foreground truncate">{email ?? "Loading…"}</div>
-            <div className="text-muted-foreground">GTCO SME customer</div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-              className="mt-2 w-full justify-start text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="mr-2 h-4 w-4" /> Sign out
-            </Button>
-          </div>
+          <UserSidebarFooter email={email} onSignOut={signOut} />
         </aside>
         <main className="min-w-0 flex-1">
           <Outlet />
