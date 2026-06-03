@@ -6,7 +6,6 @@ import {
   ArrowRight,
   MessageSquare,
   Bot,
-  Sparkles,
   Hash,
   Instagram,
   Play,
@@ -54,7 +53,10 @@ function Hero() {
   ];
 
   return (
-    <section className="relative flex min-h-[100svh] flex-col overflow-hidden">
+    <section
+      data-hero-section
+      className="relative flex min-h-[100svh] flex-col overflow-hidden"
+    >
       <img
         src={heroBg}
         alt=""
@@ -73,15 +75,7 @@ function Hero() {
       <SiteHeader variant="hero" />
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-20 pt-28 text-center sm:pt-32">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-md sm:text-sm">
-          <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
-            New
-          </span>
-          <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-          <span>Instagram comment + DM triggers for SME storefronts</span>
-        </div>
-
-        <h1 className="mt-6 max-w-4xl font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+        <h1 className="max-w-4xl font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
           You run the business.
           <br />
           <span className="text-primary">Lynk</span> handles the DMs.

@@ -11,9 +11,12 @@ import { nitro } from "nitro/vite";
 
 // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
 // @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
-export default defineConfig({
-  // Trusted local HTTPS (green padlock). First `npm run dev` may prompt to install mkcert CA (admin once).
-  plugins: [mkcert({ hosts: ["localhost", "127.0.0.1"] }), nitro()],
+export default defineConfig(({ command }) => ({
+  // mkcert only for local `vite dev` — breaks CI/Vercel builds if included in production build.
+  plugins: [
+    ...(command === "serve" ? [mkcert({ hosts: ["localhost", "127.0.0.1"] })] : []),
+    nitro(),
+  ],
   tanstackStart: {
     server: { entry: "server" },
   },
@@ -23,4 +26,4 @@ export default defineConfig({
       chunkSizeWarningLimit: 700,
     },
   },
-});
+}));
