@@ -7,6 +7,7 @@ import {
   type MetaOAuthLoginSearch,
 } from "@/lib/metaOAuthResume";
 import { finishMetaInstagramConnect } from "@/lib/finishMetaInstagramConnect";
+import { AuthBackButton } from "@/components/site/AuthBackButton";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, Loader2, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getClientSession, isBrowserAuthContext } from "@/lib/authSession";
+import { getPostAuthPath } from "@/lib/postAuthRedirect";
 
 const loginSearchSchema = z.object({
   oauth: z.literal(META_OAUTH_LOGIN_FLAG).optional(),
@@ -47,7 +49,7 @@ export const Route = createFileRoute("/login")({
       });
     }
     if (user) {
-      throw redirect({ to: "/dashboard" });
+      throw redirect({ to: await getPostAuthPath(user.id) });
     }
   },
   component: LoginPage,
@@ -131,7 +133,11 @@ function LoginPage() {
     }
 
     setLoading(false);
-    navigate({ to: "/onboarding" });
+    const { data: userData } = await supabase.auth.getUser();
+    const dest = userData.user
+      ? await getPostAuthPath(userData.user.id)
+      : "/dashboard";
+    navigate({ to: dest });
   }
 
   const signupSearch = metaPending
@@ -142,6 +148,7 @@ function LoginPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main className="mx-auto max-w-md px-6 py-16 md:py-24">
+        <AuthBackButton />
         <div className="rounded-3xl border border-border bg-card p-8 shadow-[var(--shadow-card)] md:p-10">
           <div className="flex items-center gap-3 text-sm font-medium text-primary">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft">
@@ -175,7 +182,15 @@ function LoginPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="login-password">Password</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="login-password">Password</Label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="login-password"
                 type="password"

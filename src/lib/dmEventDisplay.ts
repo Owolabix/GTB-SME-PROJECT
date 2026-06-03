@@ -37,16 +37,39 @@ export function parseDmEventPayload(payload: unknown): {
   return { senderId: null, handle: null, messagePreview: null };
 }
 
-export function formatRecipientLabel(handle: string | null, senderId: string | null): string {
-  if (handle) return handle.startsWith("@") ? handle : `@${handle}`;
-  if (senderId) return `Customer ${senderId}`;
-  return "Unknown customer";
+export function formatRecipientLabel(handle: string | null, _senderId?: string | null): string {
+  return formatCustomerLabel(handle);
 }
 
 /** Owner follow-ups: prefer @handle; never show raw PSID in the UI. */
 export function formatCustomerLabel(handle: string | null): string {
   if (handle) return handle.startsWith("@") ? handle : `@${handle}`;
   return "Instagram customer";
+}
+
+/** Plain-language summary of Meta send failures for store owners. */
+export function dmFailureReason(error: string | null | undefined): string | null {
+  if (!error?.trim()) return null;
+  const e = error.toLowerCase();
+  if (
+    e.includes("window") ||
+    e.includes("24 hour") ||
+    e.includes("24-hour") ||
+    e.includes("outside of allowed")
+  ) {
+    return "Outside Instagram's 24-hour reply window — open the chat in Instagram to reply manually.";
+  }
+  if (e.includes("cannot send") || e.includes("can't send") || e.includes("not available")) {
+    return "This customer can't receive DMs from your account right now.";
+  }
+  if (e.includes("oauth") || e.includes("access token") || e.includes("session has expired")) {
+    return "Instagram connection issue — reconnect your account under Integrations.";
+  }
+  if (e.includes("rate limit") || e.includes("too many")) {
+    return "Instagram rate limit hit — wait a few minutes and try again.";
+  }
+  if (error.length > 140) return `${error.slice(0, 137)}…`;
+  return error;
 }
 
 function errorLower(error: string | null | undefined): string {
@@ -95,6 +118,9 @@ export function dmActivityHeadline(
     }
     return `Needs you — ${recipientLabel}`;
   }
+  if (status === "failed") {
+    return `Reply failed to ${recipientLabel}`;
+  }
   return `Status: ${status} — ${recipientLabel}`;
 }
 
@@ -102,5 +128,6 @@ export function dmActivityStatusLabel(status: string, error: string | null): str
   if (status === "skipped" && (isLegacyAutomationSkip(error) || isAiPendingError(error))) {
     return "ai pending";
   }
+  if (status === "failed") return "send failed";
   return status;
 }

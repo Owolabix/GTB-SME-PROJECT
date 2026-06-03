@@ -30,7 +30,7 @@ Comment automations work on Lynk’s webhook or CX-Assistant’s webhook (both h
 
 When the AI escalates or records `OWNER_TASK:` lines, CX-Assistant inserts into `owner_follow_ups`. Lynk **Home** lists open items for the merchant’s connected `instagram_accounts.ig_user_id` values. Mark **Done** sets `status` to `done`.
 
-Apply migration `supabase/migrations/20260520140000_owner_follow_ups_rls.sql` so the dashboard can read/update rows (RLS).
+Apply owner_follow_ups RLS migrations through `20260529120000_owner_follow_ups_rls_auth_uid.sql` so the dashboard can read rows whether CX stored `ig_user_id`, your auth user id, or legacy `default`.
 
 ## One-time setup
 
@@ -117,16 +117,44 @@ Integrations → Connect account. This stores `ig_user_id` + `access_token` for 
 
 CX-Assistant health: `GET http://localhost:3000/health`
 
-## Topic 1 StoreBuilder (optional)
+## AISLE Storefront catalogue (recommended)
 
-Set in CX-Assistant `.env`:
+Merchants manage products in **AISLE**. Lynk and CX-Assistant fetch live catalogue at reply time:
+
+**Endpoint:** `GET https://aisle-sandy.vercel.app/api/storefront/products`  
+**Auth:** header `x-api-key: <your key>`  
+**Query:** `instagram=<handle>` or `store_id=<uuid>` (at least one required)
+
+### Lynk `.env` (server)
 
 ```env
-STOREFRONT_API_BASE_URL=https://your-storebuilder-api
-STOREFRONT_API_KEY=...
+AISLE_STOREFRONT_API_URL=https://aisle-sandy.vercel.app/api/storefront/products
+AISLE_API_KEY=your_aisle_chatbot_api_key
+VITE_STOREFRONT_ADMIN_URL=https://aisle-sandy.vercel.app
 ```
 
-When set, AI answers use live catalogue from StoreBuilder; otherwise Supabase `products` / `faqs` / `store_config` fallback.
+Settings → **Product catalogue** calls `GET /api/storefront/catalogue` (authenticated), which looks up the merchant’s connected `@instagram` handle and proxies to AISLE.
+
+### CX-Assistant `.env`
+
+```env
+AISLE_STOREFRONT_API_URL=https://aisle-sandy.vercel.app/api/storefront/products
+AISLE_API_KEY=your_aisle_chatbot_api_key
+```
+
+Use `CX-Assistant/aisleStorefront.js` — **already wired** in `context.js` as the first catalogue source when `AISLE_API_KEY` is set. `bot.js` → `getContext()` → AISLE → Topic 1 → Supabase fallback.
+
+Legacy manual wiring (only if you fork context.js):
+
+```javascript
+const { fetchAisleStorefrontProducts, formatAisleCatalogueForPrompt } = require("./aisleStorefront");
+```
+
+Legacy env names `STOREFRONT_API_BASE_URL` + `STOREFRONT_API_KEY` also work.
+
+If AISLE is unset, CX-Assistant falls back to Supabase `products` / `faqs` (dev only).
+
+Lynk does **not** include product CRUD — only catalogue status + link to AISLE admin.
 
 ## Production
 

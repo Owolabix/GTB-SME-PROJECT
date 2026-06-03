@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveMetaRedirectUriForTokenExchange } from "@/integrations/instagram/metaRedirectUri";
+import { normalizeInstagramHandle } from "@/lib/storeInfo";
 
 /** Facebook / Graph error payloads vary by endpoint. */
 function readMetaErrorJson(body: unknown): string {
@@ -54,6 +55,13 @@ export const startInstagramConnect = createServerFn({ method: "POST" })
     if (insErr) {
       return { ok: false as const, message: insErr.message };
     }
+    await supabase
+      .from("store_info")
+      .update({
+        instagram_handle: normalizeInstagramHandle("demo_store"),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("merchant_scoped_id", userData.user.id);
     return { ok: true as const, mode: "demo" as const };
   });
 
@@ -211,6 +219,22 @@ export const completeInstagramConnect = createServerFn({ method: "POST" })
           hint += " — In Supabase, allow authenticated users to insert/update rows in instagram_accounts where user_id = auth.uid().";
         }
         return { ok: false as const, message: hint };
+      }
+
+      const normalizedUsername = normalizeInstagramHandle(username);
+      const { data: storeRow } = await supabase
+        .from("store_info")
+        .select("merchant_scoped_id")
+        .eq("merchant_scoped_id", userData.user.id)
+        .maybeSingle();
+      if (storeRow) {
+        await supabase
+          .from("store_info")
+          .update({
+            instagram_handle: normalizedUsername,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("merchant_scoped_id", userData.user.id);
       }
 
       return { ok: true as const };

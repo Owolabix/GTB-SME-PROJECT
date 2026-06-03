@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,11 +17,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Instagram, Loader2, Plug, CheckCircle2, Trash2 } from "lucide-react";
+import {
+  clearIntegrationsReturnToOnboarding,
+  isOnboardingReturnSearch,
+  markIntegrationsReturnToOnboarding,
+  shouldReturnToOnboardingAfterIntegrations,
+} from "@/lib/onboardingIntegrationsReturn";
+import { ArrowRight, Instagram, Loader2, Plug, CheckCircle2, Trash2 } from "lucide-react";
 
 const integrationsSearchSchema = z.object({
   code: z.string().optional(),
   state: z.string().optional(),
+  /** Set when merchant arrives from onboarding to connect Instagram first. */
+  returnTo: z.literal("onboarding").optional(),
   /** Meta redirects here when Login fails (e.g. app in Development mode, user not on app roles). */
   error: z.string().optional(),
   error_description: z.string().optional(),
@@ -74,6 +82,11 @@ function metaAppAccessHint(oauthError: string, description: string): string | nu
 function IntegrationsPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const [onboardingReturn, setOnboardingReturn] = useState(
+    () =>
+      isOnboardingReturnSearch(search.returnTo) ||
+      shouldReturnToOnboardingAfterIntegrations(),
+  );
   const [accounts, setAccounts] = useState<IgAccount[]>([]);
   const [connecting, setConnecting] = useState(false);
   const [banner, setBanner] = useState<{ variant: "default" | "destructive"; title: string; body: string } | null>(
@@ -82,6 +95,27 @@ function IntegrationsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<IgAccount | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
+
+  useEffect(() => {
+    if (isOnboardingReturnSearch(search.returnTo)) {
+      markIntegrationsReturnToOnboarding();
+      setOnboardingReturn(true);
+      return;
+    }
+    void (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data: store } = await supabase
+        .from("store_info")
+        .select("store_name")
+        .eq("merchant_scoped_id", userData.user.id)
+        .maybeSingle();
+      if (!store?.store_name?.trim()) {
+        markIntegrationsReturnToOnboarding();
+        setOnboardingReturn(true);
+      }
+    })();
+  }, [search.returnTo]);
 
   async function load() {
     setLoadError(null);
@@ -98,14 +132,16 @@ function IntegrationsPage() {
   }
 
   useEffect(() => {
-    load();
+    void load();
     if (sessionStorage.getItem("instagram_connected") === "1") {
       sessionStorage.removeItem("instagram_connected");
-      setBanner({
-        variant: "default",
-        title: "Instagram connected",
-        body: "Your account was linked. You can set up automations next.",
-      });
+      if (!shouldReturnToOnboardingAfterIntegrations()) {
+        setBanner({
+          variant: "default",
+          title: "Instagram connected",
+          body: "Your account was linked. You can set up automations next.",
+        });
+      }
     }
   }, []);
 
@@ -183,11 +219,13 @@ function IntegrationsPage() {
           return;
         }
 
-        setBanner({
-          variant: "default",
-          title: "Instagram connected",
-          body: "Your account was linked. You can set up automations next.",
-        });
+        if (!shouldReturnToOnboardingAfterIntegrations()) {
+          setBanner({
+            variant: "default",
+            title: "Instagram connected",
+            body: "Your account was linked. You can set up automations next.",
+          });
+        }
         await load();
       } finally {
         metaOAuthCodesInFlight.delete(rawCode);
@@ -196,6 +234,9 @@ function IntegrationsPage() {
   }, [navigate, search.code, search.state]);
 
   async function connect() {
+    if (onboardingReturn) {
+      markIntegrationsReturnToOnboarding();
+    }
     setBanner(null);
     setConnecting(true);
     try {
@@ -251,11 +292,13 @@ function IntegrationsPage() {
         return;
       }
       await load();
-      setBanner({
-        variant: "default",
-        title: "Preview account added",
-        body: "Instagram is not fully configured for this environment. A preview account was added instead — contact your administrator to enable live Instagram connection.",
-      });
+      if (!shouldReturnToOnboardingAfterIntegrations()) {
+        setBanner({
+          variant: "default",
+          title: "Preview account added",
+          body: "Instagram is not fully configured for this environment. A preview account was added instead — contact your administrator to enable live Instagram connection.",
+        });
+      }
     } finally {
       setConnecting(false);
     }
@@ -293,6 +336,31 @@ function IntegrationsPage() {
         </p>
       </header>
 
+      {onboardingReturn && (
+        <Alert className="border-primary/25 bg-primary-soft/40">
+          <AlertTitle>Step 1 of 2 — Connect Instagram</AlertTitle>
+          <AlertDescription className="space-y-3">
+            <p>
+              {accounts.length > 0
+                ? "Instagram is connected. Continue to store setup to enter your store details."
+                : "Connect Instagram first, then continue to store setup. You won't need to leave store setup to connect your account."}
+            </p>
+            {accounts.length > 0 && (
+              <Button
+                asChild
+                size="sm"
+                className="rounded-full bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]"
+                onClick={() => clearIntegrationsReturnToOnboarding()}
+              >
+                <Link to="/onboarding">
+                  Continue to store setup <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {banner && (
         <Alert variant={banner.variant === "destructive" ? "destructive" : "default"}>
           <AlertTitle>{banner.title}</AlertTitle>
@@ -307,7 +375,7 @@ function IntegrationsPage() {
         </Alert>
       )}
 
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+      <div className="app-panel rounded-2xl border p-6 shadow-[var(--shadow-card)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">

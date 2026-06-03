@@ -13,10 +13,24 @@ export type LynkSystemStatus = {
     webhook: LynkServiceStatus;
     cxAssistant: LynkServiceStatus;
   };
+  /** Merchant dashboard: only surface AI offline when production CX is configured but unreachable. */
+  merchant: {
+    monitorsAiAssistant: boolean;
+    aiAssistantOffline: boolean;
+  };
 };
 
 function envPresent(...keys: string[]): boolean {
   return keys.every((k) => Boolean(process.env[k]?.trim()));
+}
+
+function isLocalDevCxUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  } catch {
+    return true;
+  }
 }
 
 export async function getLynkSystemStatus(): Promise<LynkSystemStatus> {
@@ -51,9 +65,14 @@ export async function getLynkSystemStatus(): Promise<LynkSystemStatus> {
 
   const cxUrl = process.env.CX_ASSISTANT_URL?.replace(/\/$/, "");
   const cxSecret = process.env.CX_ASSISTANT_INTERNAL_SECRET?.trim();
-  if (!cxUrl || !cxSecret) {
+  const cxConfigured = Boolean(cxUrl && cxSecret);
+  const cxLocalDev = cxUrl ? isLocalDevCxUrl(cxUrl) : true;
+
+  if (!cxConfigured) {
     services.cxAssistant.detail =
       "Set CX_ASSISTANT_URL and CX_ASSISTANT_INTERNAL_SECRET, then run npm run dev:cx";
+  } else if (cxLocalDev) {
+    services.cxAssistant.detail = `Local CX at ${cxUrl} (not monitored on merchant dashboard)`;
   } else {
     try {
       const res = await fetch(`${cxUrl}/health`, { signal: AbortSignal.timeout(4000) });
@@ -61,15 +80,21 @@ export async function getLynkSystemStatus(): Promise<LynkSystemStatus> {
         services.cxAssistant = {
           ok: true,
           label: "CX-Assistant (AI replies)",
-          detail: `Connected at ${cxUrl}`,
+          detail: "Connected",
         };
       } else {
-        services.cxAssistant.detail = `CX-Assistant returned ${res.status} — run npm run dev:cx`;
+        services.cxAssistant.detail = `CX-Assistant returned HTTP ${res.status}`;
       }
     } catch {
-      services.cxAssistant.detail = `Cannot reach ${cxUrl} — start CX-Assistant with npm run dev:cx`;
+      services.cxAssistant.detail = "CX-Assistant health check failed";
     }
   }
+
+  const monitorsAiAssistant = cxConfigured && !cxLocalDev;
+  const merchant = {
+    monitorsAiAssistant,
+    aiAssistantOffline: monitorsAiAssistant && !services.cxAssistant.ok,
+  };
 
   const ready =
     services.supabase.ok &&
@@ -81,5 +106,6 @@ export async function getLynkSystemStatus(): Promise<LynkSystemStatus> {
     ready,
     checkedAt: new Date().toISOString(),
     services,
+    merchant,
   };
 }

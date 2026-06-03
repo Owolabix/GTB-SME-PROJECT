@@ -9,12 +9,12 @@ import {
   Sparkles,
   Hash,
   Instagram,
-  CheckCircle2,
+  Play,
   Zap,
   ShieldCheck,
   Layers,
 } from "lucide-react";
-import heroImg from "@/assets/hero-illustration.jpg";
+import heroBg from "@/assets/hero-sme-bot-partners.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,7 +35,6 @@ export const Route = createFileRoute("/")({
 function Landing() {
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
       <Hero />
       <Marquee />
       <Features />
@@ -48,101 +47,95 @@ function Landing() {
 }
 
 function Hero() {
+  const featurePills = [
+    { icon: Bot, label: "AI teammate" },
+    { icon: MessageSquare, label: "Comment triggers" },
+    { icon: Zap, label: "Replies in ~1s" },
+  ];
+
   return (
-    <section className="relative overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 opacity-70"
-        style={{
-          background:
-            "radial-gradient(60% 50% at 80% 0%, oklch(0.95 0.08 55 / 0.7), transparent 60%), radial-gradient(50% 40% at 0% 30%, oklch(0.97 0.04 60 / 0.9), transparent 60%)",
-        }}
+    <section className="relative flex min-h-[100svh] flex-col overflow-hidden">
+      <img
+        src={heroBg}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
       />
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 lg:grid-cols-[1.05fr_1fr] lg:py-28">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> New • Instagram comment + DM triggers
-          </div>
-          <h1 className="mt-5 font-display text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-            Turn comments into <span className="text-primary">customers.</span><br />
-            Automatically.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Lynk Assistant watches your Instagram for keywords, then slides into the DMs of every commenter
-            with a reply you wrote — in seconds, day or night. No agency, no inbox chaos.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-full bg-[image:var(--gradient-primary)] px-6 text-base shadow-[var(--shadow-glow)] hover:opacity-95">
-              <Link to="/signup">
-                Start free <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 rounded-full border-border bg-card px-6 text-base">
-              <Link to="/how-it-works">See how it works</Link>
-            </Button>
-          </div>
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            {["Comment triggers", "DM keyword triggers", "Multi-step flows"].map((t) => (
-              <div key={t} className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" /> {t}
-              </div>
-            ))}
-          </div>
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/70"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_0%,rgba(0,0,0,0.35)_100%)]"
+        aria-hidden
+      />
+
+      <SiteHeader variant="hero" />
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-20 pt-28 text-center sm:pt-32">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-md sm:text-sm">
+          <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
+            New
+          </span>
+          <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
+          <span>Instagram comment + DM triggers for SME storefronts</span>
         </div>
 
-        <div className="relative">
-          <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-[image:var(--gradient-primary)] opacity-25 blur-3xl" />
-          <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]">
-            <img
-              src={heroImg}
-              alt="Lynk Assistant automatically replying to Instagram messages"
-              width={1280}
-              height={1024}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <FloatingCard
-            className="absolute -left-6 top-10 hidden sm:block"
-            icon={<Bot className="h-4 w-4" />}
-            title="DMs sent today"
-            value="2,481"
-            tone="primary"
-          />
-          <FloatingCard
-            className="absolute -right-4 bottom-8 hidden sm:block"
-            icon={<Zap className="h-4 w-4" />}
-            title="Avg trigger speed"
-            value="1.2 sec"
-            tone="success"
-          />
+        <h1 className="mt-6 max-w-4xl font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+          You run the business.
+          <br />
+          <span className="text-primary">Lynk</span> handles the DMs.
+        </h1>
+
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg md:text-xl">
+          Your AI teammate watches Instagram for keywords, then replies to every commenter in seconds — day
+          or night. Simple setup. No inbox chaos.
+        </p>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            asChild
+            size="lg"
+            className="h-12 rounded-full bg-white px-7 text-base font-semibold text-neutral-900 shadow-lg hover:bg-white/95"
+          >
+            <Link to="/signup">
+              Start free <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-12 rounded-full border-white/25 bg-white/10 px-7 text-base text-white backdrop-blur-md hover:bg-white/20 hover:text-white"
+          >
+            <Link to="/how-it-works">
+              <Play className="mr-2 h-4 w-4 fill-current" />
+              See how it works
+            </Link>
+          </Button>
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+          {featurePills.map(({ icon: Icon, label }) => (
+            <div
+              key={label}
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3.5 py-2 text-xs font-medium text-white/90 backdrop-blur-md sm:text-sm"
+            >
+              <Icon className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
+              {label}
+            </div>
+          ))}
         </div>
       </div>
+
+      <a
+        href="#features"
+        className="relative z-10 mx-auto mb-8 flex h-9 w-5 items-start justify-center rounded-full border-2 border-white/50 pt-1.5 transition hover:border-white"
+        aria-label="Scroll to features"
+      >
+        <span className="h-1.5 w-1 rounded-full bg-white/80" />
+      </a>
     </section>
-  );
-}
-
-function FloatingCard({
-  className = "",
-  icon,
-  title,
-  value,
-  tone,
-}: {
-  className?: string;
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  tone: "primary" | "success";
-}) {
-  return (
-    <div className={`flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-[var(--shadow-card)] backdrop-blur ${className}`}>
-      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${tone === "primary" ? "bg-primary-soft text-primary" : "bg-success/15 text-success"}`}>
-        {icon}
-      </div>
-      <div>
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
-        <div className="font-display text-base font-semibold">{value}</div>
-      </div>
-    </div>
   );
 }
 
@@ -271,9 +264,9 @@ function Stats() {
         <div className="rounded-[2rem] border border-primary/20 bg-[image:var(--gradient-primary)] p-10 text-primary-foreground shadow-[var(--shadow-glow)]">
           <div className="grid gap-8 md:grid-cols-4">
             {stats.map((s) => (
-              <div key={s.l}>
+              <div key={s.l} className="text-center">
                 <div className="font-display text-5xl font-bold">{s.v}</div>
-                <div className="mt-1 text-sm text-primary-foreground/80">{s.l}</div>
+                <div className="mx-auto mt-1 max-w-[11rem] text-sm text-primary-foreground/80">{s.l}</div>
               </div>
             ))}
           </div>

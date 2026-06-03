@@ -11,7 +11,7 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Lynk Assistant ships free with every GTCO SME current account. No add-on fees, no per-message charges.",
+          "Lynk Assistant ships free with every GTCO SME current account. Starter is available now; Growth and Scale are on the roadmap.",
       },
     ],
   }),
@@ -22,21 +22,23 @@ const tiers = [
   {
     name: "Starter",
     eligibility: "Any GTCO SME current account",
+    availability: "available" as const,
+    highlight: true,
     features: [
       "1 connected Instagram account",
-      "Up to 3 active automations",
-      "Comment + DM keyword triggers",
-      "Basic delivery analytics",
+      "Keyword automations + AI replies for unmatched DMs",
+      "Merchant FAQs and store context for the assistant",
+      "AISLE product catalogue sync",
+      "Dashboard activity + basic analytics",
     ],
   },
   {
     name: "Growth",
     eligibility: "GTCO SME Plus / Premium tier",
-    highlight: true,
+    availability: "soon" as const,
     features: [
-      "3 connected Instagram accounts",
-      "Unlimited automations",
-      "Multi-step DM flows + delays",
+      "Multiple Instagram accounts",
+      "Unlimited automations + multi-step DM flows",
       "Order-status replies via your GTCO data",
       "Priority webhook delivery",
     ],
@@ -44,6 +46,7 @@ const tiers = [
   {
     name: "Scale",
     eligibility: "GTCO Corporate SME",
+    availability: "soon" as const,
     features: [
       "Unlimited IG accounts + teammates",
       "Custom keyword routing per post",
@@ -66,33 +69,48 @@ function PricingPage() {
             No add-on fees. Lynk Assistant rides on your GTCO SME plan.
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
-            Your tier is set by the SME account you already hold with GTCO.
-            Upgrade your account at the bank to unlock more capacity in Lynk Assistant.
+            <strong className="font-medium text-foreground">Starter</strong> is what we ship in v1 today.
+            Growth and Scale are planned tiers as we scale the product — same ₦0 add-on pricing model,
+            more capacity when your bank tier unlocks them.
           </p>
         </div>
 
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {tiers.map((t) => (
-            <div
-              key={t.name}
-              className={`rounded-3xl border p-8 ${
-                t.highlight
-                  ? "border-primary bg-card shadow-[var(--shadow-glow)]"
-                  : "border-border bg-card shadow-[var(--shadow-card)]"
-              }`}
-            >
-              <h3 className="text-xl font-semibold">{t.name}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{t.eligibility}</p>
-              <div className="mt-6 text-3xl font-semibold">₦0<span className="text-base font-normal text-muted-foreground">/mo</span></div>
-              <ul className="mt-6 space-y-2 text-sm">
-                {t.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <Check className="mt-0.5 h-4 w-4 flex-none text-primary" /> {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {tiers.map((t) => {
+            const available = t.availability === "available";
+            return (
+              <div
+                key={t.name}
+                className={`relative rounded-3xl border p-8 ${
+                  t.highlight
+                    ? "border-primary bg-card shadow-[var(--shadow-glow)]"
+                    : "border-border bg-card shadow-[var(--shadow-card)]"
+                } ${!available ? "opacity-80" : ""}`}
+              >
+                <span
+                  className={`absolute right-6 top-6 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    available
+                      ? "bg-success/15 text-success"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {available ? "Available now" : "Coming soon"}
+                </span>
+                <h3 className="text-xl font-semibold pr-24">{t.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t.eligibility}</p>
+                <div className="mt-6 text-3xl font-semibold">
+                  ₦0<span className="text-base font-normal text-muted-foreground">/mo</span>
+                </div>
+                <ul className="mt-6 space-y-2 text-sm">
+                  {t.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 flex-none text-primary" /> {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-12 rounded-3xl border border-border bg-secondary/40 p-8 text-center">

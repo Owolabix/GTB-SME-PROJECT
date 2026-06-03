@@ -10,13 +10,24 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getClientSession, isBrowserAuthContext } from "@/lib/authSession";
 import { metaOAuthParamsFromLocationSearch } from "@/lib/metaOAuthResume";
+import {
+  isInstagramConnectedForUser,
+  isOnboardingSetupPath,
+  isStoreSetupCompleteForUser,
+  SETUP_ENTRY_PATH,
+} from "@/lib/storeSetup";
+import { useStoreSetupComplete } from "@/hooks/use-store-setup-complete";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
+  BarChart3,
   Workflow,
   Plug,
+  ShoppingBag,
   Settings as SettingsIcon,
+  HelpCircle,
+  Store,
   LogOut,
   Menu,
 } from "lucide-react";
@@ -30,7 +41,6 @@ import {
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
-    // Session is in localStorage; SSR cannot see it and would wrongly send users to /login on refresh.
     if (!isBrowserAuthContext()) return;
 
     const session = await getClientSession();
@@ -44,15 +54,41 @@ export const Route = createFileRoute("/_authenticated")({
       }
       throw redirect({ to: "/login" });
     }
+
+    const setupComplete = await isStoreSetupCompleteForUser(session.user.id);
+    const onSetupPath = isOnboardingSetupPath(location.pathname);
+
+    if (!setupComplete && !onSetupPath) {
+      throw redirect({ to: SETUP_ENTRY_PATH });
+    }
+
+    if (!setupComplete && location.pathname === "/onboarding") {
+      const igConnected = await isInstagramConnectedForUser(session.user.id);
+      if (!igConnected) {
+        throw redirect({ to: SETUP_ENTRY_PATH });
+      }
+    }
+
+    if (setupComplete && location.pathname === "/onboarding") {
+      throw redirect({ to: "/dashboard" });
+    }
   },
   component: AuthLayout,
 });
 
-const nav = [
+const fullNav = [
   { to: "/dashboard" as const, label: "Home", icon: LayoutDashboard },
+  { to: "/analytics" as const, label: "Analytics", icon: BarChart3 },
   { to: "/automations" as const, label: "Automations", icon: Workflow },
+  { to: "/faqs" as const, label: "FAQs", icon: HelpCircle },
   { to: "/integrations" as const, label: "Integrations", icon: Plug },
+  { to: "/products" as const, label: "Products", icon: ShoppingBag },
   { to: "/settings" as const, label: "Settings", icon: SettingsIcon },
+];
+
+const setupNav = [
+  { to: "/integrations" as const, label: "Integrations", icon: Plug },
+  { to: "/onboarding" as const, label: "Store setup", icon: Store },
 ];
 
 function AuthLayout() {
@@ -60,6 +96,7 @@ function AuthLayout() {
   const location = useLocation();
   const [email, setEmail] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { storeSetupComplete, setupLoading } = useStoreSetupComplete();
 
   useEffect(() => {
     void (async () => {
@@ -72,6 +109,16 @@ function AuthLayout() {
     })();
   }, [navigate]);
 
+  /**
+   * Restricted nav during onboarding only. On other routes, beforeLoad already
+   * requires setup complete — so we can show full nav while the hook loads.
+   */
+  const onSetupOnlyRoute = isOnboardingSetupPath(location.pathname);
+  const showFullNav =
+    storeSetupComplete || (setupLoading && !onSetupOnlyRoute);
+  const nav = showFullNav ? fullNav : setupNav;
+  const homeTo = showFullNav ? "/dashboard" : SETUP_ENTRY_PATH;
+
   async function signOut() {
     setMobileNavOpen(false);
     await supabase.auth.signOut();
@@ -81,9 +128,9 @@ function AuthLayout() {
   const closeMobileNav = () => setMobileNavOpen(false);
 
   return (
-    <div className="min-h-screen bg-secondary/30">
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-xl md:hidden">
-        <Link to="/dashboard" onClick={closeMobileNav} className="min-w-0 shrink">
+    <div className="app-shell min-h-screen">
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-primary/10 bg-card/90 px-4 py-3 backdrop-blur-xl md:hidden">
+        <Link to={homeTo} onClick={closeMobileNav} className="min-w-0 shrink">
           <Logo />
         </Link>
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -120,7 +167,7 @@ function AuthLayout() {
                 );
               })}
             </nav>
-            <div className="mt-4 rounded-xl border border-border bg-background p-3 text-xs">
+            <div className="mt-4 rounded-xl border border-primary/15 bg-primary-soft/35 p-3 text-xs">
               <div className="font-medium text-foreground truncate">{email ?? "Loading…"}</div>
               <div className="text-muted-foreground">GTCO SME customer</div>
               <Button
@@ -137,9 +184,11 @@ function AuthLayout() {
       </header>
 
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 md:px-6">
-        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-64 shrink-0 flex-col rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] md:flex">
+        <aside className="app-sidebar sticky top-6 hidden h-[calc(100vh-3rem)] w-64 shrink-0 flex-col rounded-2xl border p-4 md:flex">
           <div className="px-2 pb-4">
-            <Logo />
+            <Link to={homeTo}>
+              <Logo />
+            </Link>
           </div>
           <nav className="flex-1 space-y-1">
             {nav.map((n) => {
@@ -161,7 +210,7 @@ function AuthLayout() {
               );
             })}
           </nav>
-          <div className="mt-4 rounded-xl border border-border bg-background p-3 text-xs">
+          <div className="mt-4 rounded-xl border border-primary/15 bg-primary-soft/35 p-3 text-xs">
             <div className="font-medium text-foreground truncate">{email ?? "Loading…"}</div>
             <div className="text-muted-foreground">GTCO SME customer</div>
             <Button

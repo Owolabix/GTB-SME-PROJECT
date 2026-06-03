@@ -11,9 +11,6 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
 }
 
 export async function apiGet<T = unknown>(path: string): Promise<T> {
-  const health = await apiGet("/api/health");
-console.log("health", health);
-
   const res = await apiFetch(path);
   if (!res.ok) {
     const text = await res.text().catch(() => "");

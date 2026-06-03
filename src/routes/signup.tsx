@@ -1,5 +1,6 @@
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import { AuthBackButton } from "@/components/site/AuthBackButton";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getClientSession, isBrowserAuthContext } from "@/lib/authSession";
+import { getPostAuthPath } from "@/lib/postAuthRedirect";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -22,13 +24,14 @@ export const Route = createFileRoute("/signup")({
   beforeLoad: async () => {
     if (!isBrowserAuthContext()) return;
     const session = await getClientSession();
-    if (session?.user) throw redirect({ to: "/onboarding" });
+    if (session?.user) {
+      throw redirect({ to: await getPostAuthPath(session.user.id) });
+    }
   },
   component: SignupPage,
 });
 
 function SignupPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -64,12 +67,13 @@ function SignupPage() {
     }
 
     if (data.session) {
-      navigate({ to: "/onboarding" });
+      await supabase.auth.signOut();
+      setSuccess("Account created. Log in to set up your store and connect Instagram.");
       return;
     }
 
     setSuccess(
-      "Account created. If email confirmation is enabled, check your inbox then log in. Otherwise you can log in now.",
+      "Account created. Check your inbox to confirm your email, then log in.",
     );
   }
 
@@ -77,6 +81,7 @@ function SignupPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main className="mx-auto max-w-md px-6 py-16 md:py-24">
+        <AuthBackButton />
         <div className="rounded-3xl border border-border bg-card p-8 shadow-[var(--shadow-card)] md:p-10">
           <div className="flex items-center gap-3 text-sm font-medium text-primary">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft">

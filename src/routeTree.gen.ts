@@ -10,24 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiOwnerFollowUpsRouteImport } from './routes/api/owner-follow-ups'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
+import { Route as AuthenticatedFaqsRouteImport } from './routes/_authenticated/faqs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAutomationsRouteImport } from './routes/_authenticated/automations'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as ApiStorefrontCatalogueRouteImport } from './routes/api/storefront/catalogue'
 import { Route as ApiDmResolveHandlesRouteImport } from './routes/api/dm/resolve-handles'
 import { Route as ApiDmPickUpRouteImport } from './routes/api/dm/pick-up'
+import { Route as ApiAccountDeleteRouteImport } from './routes/api/account/delete'
 import { Route as ApiPublicWebhooksInstagramRouteImport } from './routes/api/public/webhooks/instagram'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -45,6 +64,11 @@ const HowItWorksRoute = HowItWorksRouteImport.update({
   path: '/how-it-works',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -52,6 +76,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOwnerFollowUpsRoute = ApiOwnerFollowUpsRouteImport.update({
+  id: '/api/owner-follow-ups',
+  path: '/api/owner-follow-ups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -62,6 +91,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -75,6 +109,11 @@ const AuthenticatedIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFaqsRoute = AuthenticatedFaqsRouteImport.update({
+  id: '/faqs',
+  path: '/faqs',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -86,6 +125,16 @@ const AuthenticatedAutomationsRoute =
     path: '/automations',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const ApiStorefrontCatalogueRoute = ApiStorefrontCatalogueRouteImport.update({
+  id: '/api/storefront/catalogue',
+  path: '/api/storefront/catalogue',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDmResolveHandlesRoute = ApiDmResolveHandlesRouteImport.update({
   id: '/api/dm/resolve-handles',
   path: '/api/dm/resolve-handles',
@@ -94,6 +143,11 @@ const ApiDmResolveHandlesRoute = ApiDmResolveHandlesRouteImport.update({
 const ApiDmPickUpRoute = ApiDmPickUpRouteImport.update({
   id: '/api/dm/pick-up',
   path: '/api/dm/pick-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccountDeleteRoute = ApiAccountDeleteRouteImport.update({
+  id: '/api/account/delete',
+  path: '/api/account/delete',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicWebhooksInstagramRoute =
@@ -105,116 +159,176 @@ const ApiPublicWebhooksInstagramRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/automations': typeof AuthenticatedAutomationsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faqs': typeof AuthenticatedFaqsRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/products': typeof AuthenticatedProductsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/owner-follow-ups': typeof ApiOwnerFollowUpsRoute
+  '/api/account/delete': typeof ApiAccountDeleteRoute
   '/api/dm/pick-up': typeof ApiDmPickUpRoute
   '/api/dm/resolve-handles': typeof ApiDmResolveHandlesRoute
+  '/api/storefront/catalogue': typeof ApiStorefrontCatalogueRoute
   '/api/public/webhooks/instagram': typeof ApiPublicWebhooksInstagramRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/automations': typeof AuthenticatedAutomationsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faqs': typeof AuthenticatedFaqsRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/products': typeof AuthenticatedProductsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/owner-follow-ups': typeof ApiOwnerFollowUpsRoute
+  '/api/account/delete': typeof ApiAccountDeleteRoute
   '/api/dm/pick-up': typeof ApiDmPickUpRoute
   '/api/dm/resolve-handles': typeof ApiDmResolveHandlesRoute
+  '/api/storefront/catalogue': typeof ApiStorefrontCatalogueRoute
   '/api/public/webhooks/instagram': typeof ApiPublicWebhooksInstagramRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/automations': typeof AuthenticatedAutomationsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/faqs': typeof AuthenticatedFaqsRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/owner-follow-ups': typeof ApiOwnerFollowUpsRoute
+  '/api/account/delete': typeof ApiAccountDeleteRoute
   '/api/dm/pick-up': typeof ApiDmPickUpRoute
   '/api/dm/resolve-handles': typeof ApiDmResolveHandlesRoute
+  '/api/storefront/catalogue': typeof ApiStorefrontCatalogueRoute
   '/api/public/webhooks/instagram': typeof ApiPublicWebhooksInstagramRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/how-it-works'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/reset-password'
     | '/signup'
+    | '/analytics'
     | '/automations'
     | '/dashboard'
+    | '/faqs'
     | '/integrations'
     | '/onboarding'
+    | '/products'
     | '/settings'
     | '/api/health'
+    | '/api/owner-follow-ups'
+    | '/api/account/delete'
     | '/api/dm/pick-up'
     | '/api/dm/resolve-handles'
+    | '/api/storefront/catalogue'
     | '/api/public/webhooks/instagram'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/how-it-works'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/reset-password'
     | '/signup'
+    | '/analytics'
     | '/automations'
     | '/dashboard'
+    | '/faqs'
     | '/integrations'
     | '/onboarding'
+    | '/products'
     | '/settings'
     | '/api/health'
+    | '/api/owner-follow-ups'
+    | '/api/account/delete'
     | '/api/dm/pick-up'
     | '/api/dm/resolve-handles'
+    | '/api/storefront/catalogue'
     | '/api/public/webhooks/instagram'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/forgot-password'
     | '/how-it-works'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/reset-password'
     | '/signup'
+    | '/_authenticated/analytics'
     | '/_authenticated/automations'
     | '/_authenticated/dashboard'
+    | '/_authenticated/faqs'
     | '/_authenticated/integrations'
     | '/_authenticated/onboarding'
+    | '/_authenticated/products'
     | '/_authenticated/settings'
     | '/api/health'
+    | '/api/owner-follow-ups'
+    | '/api/account/delete'
     | '/api/dm/pick-up'
     | '/api/dm/resolve-handles'
+    | '/api/storefront/catalogue'
     | '/api/public/webhooks/instagram'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   HowItWorksRoute: typeof HowItWorksRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiOwnerFollowUpsRoute: typeof ApiOwnerFollowUpsRoute
+  ApiAccountDeleteRoute: typeof ApiAccountDeleteRoute
   ApiDmPickUpRoute: typeof ApiDmPickUpRoute
   ApiDmResolveHandlesRoute: typeof ApiDmResolveHandlesRoute
+  ApiStorefrontCatalogueRoute: typeof ApiStorefrontCatalogueRoute
   ApiPublicWebhooksInstagramRoute: typeof ApiPublicWebhooksInstagramRoute
 }
 
@@ -225,6 +339,20 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -248,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HowItWorksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -260,6 +395,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/owner-follow-ups': {
+      id: '/api/owner-follow-ups'
+      path: '/api/owner-follow-ups'
+      fullPath: '/api/owner-follow-ups'
+      preLoaderRoute: typeof ApiOwnerFollowUpsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -276,6 +418,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/products': {
+      id: '/_authenticated/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -288,6 +437,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations'
       preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/faqs': {
+      id: '/_authenticated/faqs'
+      path: '/faqs'
+      fullPath: '/faqs'
+      preLoaderRoute: typeof AuthenticatedFaqsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -304,6 +460,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutomationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/storefront/catalogue': {
+      id: '/api/storefront/catalogue'
+      path: '/api/storefront/catalogue'
+      fullPath: '/api/storefront/catalogue'
+      preLoaderRoute: typeof ApiStorefrontCatalogueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/dm/resolve-handles': {
       id: '/api/dm/resolve-handles'
       path: '/api/dm/resolve-handles'
@@ -318,6 +488,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDmPickUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/account/delete': {
+      id: '/api/account/delete'
+      path: '/api/account/delete'
+      fullPath: '/api/account/delete'
+      preLoaderRoute: typeof ApiAccountDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/instagram': {
       id: '/api/public/webhooks/instagram'
       path: '/api/public/webhooks/instagram'
@@ -329,18 +506,24 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedAutomationsRoute: typeof AuthenticatedAutomationsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFaqsRoute: typeof AuthenticatedFaqsRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedAutomationsRoute: AuthenticatedAutomationsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFaqsRoute: AuthenticatedFaqsRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 
@@ -351,13 +534,19 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   HowItWorksRoute: HowItWorksRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiOwnerFollowUpsRoute: ApiOwnerFollowUpsRoute,
+  ApiAccountDeleteRoute: ApiAccountDeleteRoute,
   ApiDmPickUpRoute: ApiDmPickUpRoute,
   ApiDmResolveHandlesRoute: ApiDmResolveHandlesRoute,
+  ApiStorefrontCatalogueRoute: ApiStorefrontCatalogueRoute,
   ApiPublicWebhooksInstagramRoute: ApiPublicWebhooksInstagramRoute,
 }
 export const routeTree = rootRouteImport

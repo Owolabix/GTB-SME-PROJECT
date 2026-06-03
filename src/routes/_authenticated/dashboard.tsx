@@ -9,12 +9,15 @@ import {
   canPickUpDmEvent,
   dmActivityHeadline,
   dmActivityStatusLabel,
+  dmFailureReason,
 } from "@/lib/dmEventDisplay";
+import { normalizeInstagramUsername } from "@/lib/instagramLinks";
 import {
   loadOwnerFollowUps,
   markOwnerFollowUpDone,
   type OwnerFollowUp,
 } from "@/lib/ownerFollowUps";
+import { useDashboardRealtime } from "@/hooks/use-dashboard-realtime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,11 +31,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { OpenInInstagramButton } from "@/components/dashboard/OpenInInstagramButton";
+import { ActivationChecklist } from "@/components/dashboard/ActivationChecklist";
+import { AiAssistantStatusBanner } from "@/components/dashboard/AiAssistantStatusBanner";
+import { useActivationChecklist } from "@/hooks/use-activation-checklist";
+import { useStoreSetupComplete } from "@/hooks/use-store-setup-complete";
+import { useLynkSystemStatus } from "@/hooks/use-lynk-system-status";
 import {
-  Workflow,
-  Plug,
-  MessageCircle,
   ArrowRight,
+  BarChart3,
   BellRing,
   CalendarDays,
   CheckCircle2,
@@ -74,7 +81,32 @@ function dateFilterEnd(filter: DateFilter, specificDate?: Date): string | null {
   return d.toISOString();
 }
 
-type FollowUpDisplay = OwnerFollowUp & { customerLabel: string };
+type FollowUpDisplay = OwnerFollowUp & { customerLabel: string; customerUsername: string | null };
+
+function mapDmEventRow(
+  e: {
+    id: string;
+    status: string;
+    error: string | null;
+    created_at: string;
+    trigger_payload: unknown;
+  },
+  handleBySenderId: Record<string, string>,
+): DmActivityRow {
+  const parsed = parseDmEventPayload(e.trigger_payload);
+  const handle =
+    parsed.handle ?? (parsed.senderId ? handleBySenderId[parsed.senderId] ?? null : null);
+  return {
+    id: e.id,
+    status: e.status,
+    error: e.error,
+    created_at: e.created_at,
+    recipientLabel: formatRecipientLabel(handle, parsed.senderId),
+    instagramUsername: normalizeInstagramUsername(handle),
+    messagePreview: parsed.messagePreview,
+    canPickUp: canPickUpDmEvent(e.status, e.error, Boolean(parsed.senderId)),
+  };
+}
 
 async function fetchInstagramHandles(
   token: string,
@@ -120,12 +152,25 @@ function DashboardHome() {
   const [followUpsError, setFollowUpsError] = useState<string | null>(null);
   const [followUpsHint, setFollowUpsHint] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
-  const [counts, setCounts] = useState({
-    automations: 0,
-    integrations: 0,
-    sent: 0,
-    openFollowUps: 0,
-  });
+  const [openFollowUpCount, setOpenFollowUpCount] = useState(0);
+
+  const {
+    state: activationState,
+    prefs: activationPrefs,
+    visible: showActivationChecklist,
+    refresh: refreshActivation,
+    dismiss: dismissActivationChecklist,
+    skipTestStep: skipActivationTestStep,
+  } = useActivationChecklist();
+
+  const { storeSetupComplete } = useStoreSetupComplete();
+
+  const {
+    loading: systemStatusLoading,
+    monitorsAiAssistant,
+    aiAssistantOffline,
+    refresh: refreshSystemStatus,
+  } = useLynkSystemStatus();
 
   const refreshFollowUps = useCallback(async () => {
     setFollowUpsError(null);
@@ -147,12 +192,16 @@ function DashboardHome() {
       }
 
       setFollowUps(
-        rows.map((r) => ({
-          ...r,
-          customerLabel: formatCustomerLabel(handleByCustomerId[r.instagram_customer_id] ?? null),
-        })),
+        rows.map((r) => {
+          const rawHandle = handleByCustomerId[r.instagram_customer_id] ?? null;
+          return {
+            ...r,
+            customerLabel: formatCustomerLabel(rawHandle),
+            customerUsername: normalizeInstagramUsername(rawHandle),
+          };
+        }),
       );
-      setCounts((c) => ({ ...c, openFollowUps: rows.length }));
+      setOpenFollowUpCount(rows.length);
 
       if (rows.length === 0 && (igCount ?? 0) === 0) {
         setFollowUpsHint("Connect Instagram under Integrations so follow-ups link to your account.");
@@ -163,7 +212,7 @@ function DashboardHome() {
       const msg = e instanceof Error ? e.message : String(e);
       setFollowUpsError(msg);
       setFollowUps([]);
-      setCounts((c) => ({ ...c, openFollowUps: 0 }));
+      setOpenFollowUpCount(0);
     }
   }, []);
 
@@ -222,21 +271,7 @@ function DashboardHome() {
       const kwLower = keywordFilter.trim().toLowerCase();
       const userLower = usernameFilter.trim().toLowerCase().replace(/^@/, "");
 
-      const mapped = all.map((e) => {
-        const parsed = parseDmEventPayload(e.trigger_payload);
-        const handle =
-          parsed.handle ??
-          (parsed.senderId ? handleBySenderId[parsed.senderId] ?? null : null);
-        return {
-          id: e.id,
-          status: e.status,
-          error: e.error,
-          created_at: e.created_at,
-          recipientLabel: formatRecipientLabel(handle, parsed.senderId),
-          messagePreview: parsed.messagePreview,
-          canPickUp: canPickUpDmEvent(e.status, e.error, Boolean(parsed.senderId)),
-        } satisfies DmActivityRow;
-      });
+      const mapped = all.map((e) => mapDmEventRow(e, handleBySenderId));
 
       const filtered = mapped.filter((row) => {
         if (kwLower && !(row.messagePreview?.toLowerCase().includes(kwLower))) return false;
@@ -291,56 +326,47 @@ function DashboardHome() {
         });
       }
 
-      const rows = slice.map((e) => {
-        const parsed = parseDmEventPayload(e.trigger_payload);
-        const handle =
-          parsed.handle ??
-          (parsed.senderId ? handleBySenderId[parsed.senderId] ?? null : null);
-        return {
-          id: e.id,
-          status: e.status,
-          error: e.error,
-          created_at: e.created_at,
-          recipientLabel: formatRecipientLabel(handle, parsed.senderId),
-          messagePreview: parsed.messagePreview,
-          canPickUp: canPickUpDmEvent(e.status, e.error, Boolean(parsed.senderId)),
-        } satisfies DmActivityRow;
-      });
+      const rows = slice.map((e) => mapDmEventRow(e, handleBySenderId));
       setEvents(rows);
     }
 
-    const { count: sentCount } = await supabase
-      .from("dm_events")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "sent");
-    setCounts((c) => ({ ...c, sent: sentCount ?? 0 }));
     setEventsLoading(false);
   }, [activityPage, statusFilter, dateFilter, specificDate, keywordFilter, usernameFilter]);
 
+  const refreshActivity = useCallback(async () => {
+    await refreshEvents();
+    void refreshActivation();
+  }, [refreshEvents, refreshActivation]);
+
+  const { live: dashboardLive } = useDashboardRealtime({
+    onRefreshActivity: refreshActivity,
+    onRefreshFollowUps: refreshFollowUps,
+  });
+
   useEffect(() => {
-    void (async () => {
-      const { count: autoCount } = await supabase
-        .from("automations")
-        .select("id", { count: "exact", head: true });
-      const { count: igCount } = await supabase
-        .from("instagram_accounts")
-        .select("id", { count: "exact", head: true });
-      setCounts((c) => ({
-        ...c,
-        automations: autoCount ?? 0,
-        integrations: igCount ?? 0,
-      }));
-    })();
     void refreshFollowUps();
     void refreshEvents();
-  }, [refreshFollowUps, refreshEvents]);
+    void refreshActivation();
+  }, [refreshFollowUps, refreshEvents, refreshActivation]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshFollowUps();
+        void refreshEvents();
+        void refreshActivation();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refreshFollowUps, refreshEvents, refreshActivation]);
 
   async function resolveFollowUp(id: string) {
     setResolvingId(id);
     try {
       await markOwnerFollowUpDone(id);
       setFollowUps((prev) => prev.filter((f) => f.id !== id));
-      setCounts((c) => ({ ...c, openFollowUps: Math.max(0, c.openFollowUps - 1) }));
+      setOpenFollowUpCount((n) => Math.max(0, n - 1));
     } catch (e) {
       setFollowUpsError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -377,7 +403,7 @@ function DashboardHome() {
       setEventsError(result.message ?? `Pick up failed (${res.status})`);
       return;
     }
-    await refreshEvents();
+    await refreshActivity();
   }
 
   return (
@@ -385,31 +411,67 @@ function DashboardHome() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">Here's what Lynk Assistant handled for you.</p>
+          <p className="text-sm text-muted-foreground">
+            Here's what Lynk Assistant handled for you.
+            {dashboardLive && (
+              <span className="ml-2 inline-flex items-center gap-1 text-xs text-success">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" aria-hidden />
+                Live
+              </span>
+            )}
+          </p>
         </div>
-        <Button asChild className="rounded-full bg-[image:var(--gradient-primary)]">
-          <Link to="/automations">New automation <ArrowRight className="ml-1 h-4 w-4" /></Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline" className="rounded-full">
+            <Link to="/analytics">
+              <BarChart3 className="mr-1 h-4 w-4" /> Analytics
+            </Link>
+          </Button>
+          <Button asChild className="rounded-full bg-[image:var(--gradient-primary)]">
+            <Link to="/automations">New automation <ArrowRight className="ml-1 h-4 w-4" /></Link>
+          </Button>
+        </div>
       </header>
 
-      <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi icon={<Workflow className="h-4 w-4" />} label="Active automations" value={counts.automations} />
-        <Kpi icon={<Plug className="h-4 w-4" />} label="IG accounts connected" value={counts.integrations} />
-        <Kpi icon={<MessageCircle className="h-4 w-4" />} label="DMs sent (recent)" value={counts.sent} />
-        <Kpi
-          icon={<BellRing className="h-4 w-4" />}
-          label="Needs your attention"
-          value={counts.openFollowUps}
-          highlight={counts.openFollowUps > 0}
+      {monitorsAiAssistant && (
+        <AiAssistantStatusBanner
+          loading={systemStatusLoading}
+          showOffline={aiAssistantOffline}
+          onRefresh={() => void refreshSystemStatus()}
         />
-      </div>
+      )}
 
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+      {storeSetupComplete && showActivationChecklist && (
+        <ActivationChecklist
+          state={activationState}
+          testStepSkipped={activationPrefs.testStepSkipped}
+          onDismiss={dismissActivationChecklist}
+          onSkipTestStep={skipActivationTestStep}
+        />
+      )}
+
+      {openFollowUpCount > 0 && (
+        <Alert className="border-warning/40 bg-warning/5">
+          <AlertTitle>{openFollowUpCount} follow-up{openFollowUpCount === 1 ? "" : "s"} need you</AlertTitle>
+          <AlertDescription>
+            Scroll down to respond, or check{" "}
+            <Link to="/analytics" className="font-medium text-primary underline-offset-4 hover:underline">
+              Analytics
+            </Link>{" "}
+            for volume and trends.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <section className="app-panel rounded-2xl border p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-base font-semibold">Owner follow-ups</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               When the AI cannot fully help, or a customer needs a human, tasks appear here (from Instagram DMs).
+              {openFollowUpCount > 0 && (
+                <span className="ml-1 font-medium text-warning">{openFollowUpCount} open</span>
+              )}
             </p>
           </div>
         </div>
@@ -438,20 +500,23 @@ function DashboardHome() {
                     {f.customerLabel} · {new Date(f.created_at).toLocaleString()}
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={resolvingId === f.id}
-                  onClick={() => void resolveFollowUp(f.id)}
-                >
-                  {resolvingId === f.id ? (
-                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="mr-1 h-4 w-4" />
-                  )}
-                  Mark done
-                </Button>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <OpenInInstagramButton username={f.customerUsername} />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={resolvingId === f.id}
+                    onClick={() => void resolveFollowUp(f.id)}
+                  >
+                    {resolvingId === f.id ? (
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="mr-1 h-4 w-4" />
+                    )}
+                    Mark done
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
@@ -463,11 +528,13 @@ function DashboardHome() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+      <section className="app-panel rounded-2xl border p-6">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="text-base font-semibold">Recent activity</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Keyword automations and send status.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Customer messages, replies, and status — open a thread in Instagram when a handle is known.
+            </p>
           </div>
           {activityTotalCount > 0 && (
             <p className="text-xs text-muted-foreground">
@@ -660,14 +727,26 @@ function DashboardHome() {
                       {dmActivityHeadline(e.status, e.error, e.recipientLabel)}
                     </div>
                     {e.messagePreview && (
-                      <p className="mt-1 line-clamp-2 text-xs text-foreground/80">
-                        “{e.messagePreview}”
-                      </p>
+                      <div className="mt-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                          Customer message
+                        </p>
+                        <p className="mt-1 text-sm text-foreground/90 whitespace-pre-wrap break-words line-clamp-4">
+                          {e.messagePreview}
+                        </p>
+                      </div>
                     )}
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {new Date(e.created_at).toLocaleString()}
+                      {e.recipientLabel} · {new Date(e.created_at).toLocaleString()}
                     </div>
-                    {e.error && <div className="mt-1 text-xs text-destructive">{e.error}</div>}
+                    {e.error && e.status === "failed" && (
+                      <div className="mt-1 text-xs text-destructive">
+                        {dmFailureReason(e.error) ?? e.error}
+                      </div>
+                    )}
+                    {e.error && e.status === "skipped" && (
+                      <div className="mt-1 text-xs text-muted-foreground">{e.error}</div>
+                    )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <span
@@ -676,11 +755,14 @@ function DashboardHome() {
                           ? "bg-success/10 text-success"
                           : e.status === "skipped"
                             ? "bg-warning/15 text-warning"
-                            : "bg-muted text-muted-foreground"
+                            : e.status === "failed"
+                              ? "bg-destructive/10 text-destructive"
+                              : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {dmActivityStatusLabel(e.status, e.error)}
                     </span>
+                    <OpenInInstagramButton username={e.instagramUsername} />
                     {e.canPickUp && (
                       <Button
                         type="button"
@@ -814,34 +896,5 @@ function ActivityPagination({
         <ChevronRight className="h-4 w-4" />
       </Button>
     </nav>
-  );
-}
-
-function Kpi({
-  icon,
-  label,
-  value,
-  highlight,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex h-full min-h-[7.25rem] flex-col rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]",
-        highlight ? "border-warning/40 bg-warning/5" : "border-border",
-      )}
-    >
-      <div className="flex min-h-[2.75rem] items-start gap-2 text-xs font-medium uppercase leading-snug tracking-wider text-muted-foreground">
-        <span className="mt-0.5 shrink-0">{icon}</span>
-        <span className="line-clamp-2">{label}</span>
-      </div>
-      <div className="mt-auto pt-3 text-3xl font-semibold tabular-nums leading-none tracking-tight">
-        {value}
-      </div>
-    </div>
   );
 }

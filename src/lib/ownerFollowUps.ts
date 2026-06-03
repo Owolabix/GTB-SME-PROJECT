@@ -9,38 +9,64 @@ export type OwnerFollowUp = {
   created_at: string;
 };
 
-export async function loadMerchantIgIds(): Promise<string[]> {
-  const { data, error } = await supabase.from("instagram_accounts").select("ig_user_id");
-  if (error) throw new Error(error.message);
-  const ids = (data ?? []).map((r) => r.ig_user_id).filter(Boolean);
-  // Legacy CX-Assistant rows used DEFAULT_MERCHANT_SCOPED_ID=default
-  if (ids.length > 0 && !ids.includes("default")) {
-    ids.push("default");
-  }
-  return ids;
+/** Treat any non-done status as open (CX may use open, pending, etc.). */
+export function isOpenFollowUpStatus(status: string | null | undefined): boolean {
+  if (status == null || status.trim() === "") return true;
+  return !/^done$/i.test(status.trim());
 }
 
 /**
- * Loads owner_follow_ups for the logged-in merchant.
- * RLS (Supabase policies) restricts rows to their instagram_accounts; do not over-filter client-side.
+ * Loads owner follow-ups via server API (scoped lookup + backfill from dm_events).
  */
 export async function loadOwnerFollowUps(opts?: { openOnly?: boolean }): Promise<OwnerFollowUp[]> {
-  let query = supabase
-    .from("owner_follow_ups")
-    .select("id,merchant_scoped_id,instagram_customer_id,summary,status,created_at")
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) return [];
 
-  if (opts?.openOnly !== false) {
-    query = query.in("status", ["open", "Open", "OPEN"]);
+  const res = await fetch("/api/owner-follow-ups", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  let body: { ok?: boolean; followUps?: OwnerFollowUp[]; message?: string };
+  try {
+    body = (await res.json()) as typeof body;
+  } catch {
+    throw new Error("Invalid response from server.");
   }
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return (data ?? []) as OwnerFollowUp[];
+  if (!res.ok || !body.ok) {
+    throw new Error(body.message ?? `Could not load follow-ups (${res.status})`);
+  }
+
+  let rows = body.followUps ?? [];
+  if (opts?.openOnly === false) {
+    return rows;
+  }
+  return rows.filter((r) => isOpenFollowUpStatus(r.status));
 }
 
 export async function markOwnerFollowUpDone(id: string): Promise<void> {
-  const { error } = await supabase.from("owner_follow_ups").update({ status: "done" }).eq("id", id);
-  if (error) throw new Error(error.message);
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("You must be signed in.");
+
+  const res = await fetch("/api/owner-follow-ups", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ id }),
+  });
+
+  let body: { ok?: boolean; message?: string };
+  try {
+    body = (await res.json()) as typeof body;
+  } catch {
+    throw new Error("Invalid response from server.");
+  }
+
+  if (!res.ok || !body.ok) {
+    throw new Error(body.message ?? `Could not update follow-up (${res.status})`);
+  }
 }

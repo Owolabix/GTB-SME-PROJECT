@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { forwardDmToCxAssistant } from "@/integrations/cx-assistant/forwardDm";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { parseDmEventPayload } from "@/lib/dmEventDisplay";
 
 function supabaseForUserJwt(accessToken: string) {
@@ -70,13 +72,11 @@ export async function pickUpSkippedDmForUser(
           message: { text: parsed.messagePreview ?? "", mid: `pickup_${eventId}` },
         };
 
-  const { forwardDmToCxAssistant } = await import("@/integrations/cx-assistant/forwardDm");
   await forwardDmToCxAssistant({
     merchantScopedId: igAccount.ig_user_id,
     event,
   });
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   await supabaseAdmin
     .from("dm_events")
     .update({ error: "Picked up — AI assistant handling" })

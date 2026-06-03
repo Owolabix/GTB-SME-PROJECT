@@ -4,6 +4,7 @@ export type DmActivityRow = {
   error: string | null;
   created_at: string;
   recipientLabel: string;
+  instagramUsername: string | null;
   messagePreview: string | null;
   canPickUp: boolean;
 };

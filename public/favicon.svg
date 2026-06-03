@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Lynk Assistant">
+  <defs>
+    <linearGradient id="lynk-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f2850d" />
+      <stop offset="100%" stop-color="#d95f0a" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="9" fill="url(#lynk-grad)" />
+  <g
+    fill="none"
+    stroke="#fffef8"
+    stroke-width="2.4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    transform="translate(16 16) rotate(-12) translate(-12 -12) scale(0.92)"
+  >
+    <path d="M22 2 11 13" />
+    <path d="M22 2 15 22 11 13 2 9 22 2" />
+  </g>
+</svg>
