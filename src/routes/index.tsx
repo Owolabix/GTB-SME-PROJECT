@@ -86,11 +86,11 @@ function Hero() {
           or night. Simple setup. No inbox chaos.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-1 gap-3 sm:max-w-xl sm:grid-cols-2">
           <Button
             asChild
             size="lg"
-            className="h-12 rounded-full bg-white px-7 text-base font-semibold text-neutral-900 shadow-lg hover:bg-white/95"
+            className="h-12 w-full rounded-full bg-[image:var(--gradient-primary)] px-7 text-base font-semibold shadow-[var(--shadow-glow)] hover:opacity-95"
           >
             <Link to="/signup">
               Start free <ArrowRight className="ml-1 h-4 w-4" />
@@ -100,7 +100,7 @@ function Hero() {
             asChild
             size="lg"
             variant="outline"
-            className="h-12 rounded-full border-white/25 bg-white/10 px-7 text-base text-white backdrop-blur-md hover:bg-white/20 hover:text-white"
+            className="h-12 w-full rounded-full border-white/25 bg-white/10 px-7 text-base text-white backdrop-blur-md hover:bg-white/20 hover:text-white"
           >
             <Link to="/how-it-works">
               <Play className="mr-2 h-4 w-4 fill-current" />
@@ -281,11 +281,17 @@ function CTASection() {
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
             Set up your first automation in minutes. Free to start, scales as you grow.
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-full bg-[image:var(--gradient-primary)] px-7 text-base shadow-[var(--shadow-glow)] hover:opacity-95">
-              <Link to="/signup">Start free <ArrowRight className="ml-1 h-4 w-4" /></Link>
+          <div className="mx-auto mt-7 grid w-full max-w-md grid-cols-1 gap-3 sm:max-w-xl sm:grid-cols-2">
+            <Button
+              asChild
+              size="lg"
+              className="h-12 w-full rounded-full bg-[image:var(--gradient-primary)] px-7 text-base shadow-[var(--shadow-glow)] hover:opacity-95"
+            >
+              <Link to="/signup">
+                Start free <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 rounded-full px-7 text-base">
+            <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full px-7 text-base">
               <Link to="/pricing">See pricing</Link>
             </Button>
           </div>

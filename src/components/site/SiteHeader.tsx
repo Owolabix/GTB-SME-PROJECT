@@ -24,6 +24,18 @@ const heroNavGlass =
 const heroNavSolid =
   "border border-border/20 bg-white/95";
 
+const defaultNavLinkClass =
+  "rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-primary-soft hover:text-primary";
+
+const heroNavLinkSolidClass =
+  "rounded-full px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-primary-soft hover:text-primary";
+
+const heroNavLinkGlassClass =
+  "rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/20 hover:text-primary";
+
+const mobileNavLinkClass =
+  "flex rounded-xl px-4 py-3 text-base font-medium text-foreground transition hover:bg-primary-soft hover:text-primary";
+
 type SiteHeaderProps = {
   variant?: "default" | "hero";
 };
@@ -36,13 +48,6 @@ type MobileNavProps = {
 function MobileSiteNav({ variant, heroScrolled = false }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
-
-  const menuLinkClass =
-    variant === "hero"
-      ? heroScrolled
-        ? "flex rounded-xl px-4 py-3 text-base font-medium text-foreground transition hover:bg-accent"
-        : "flex rounded-xl px-4 py-3 text-base font-medium text-foreground transition hover:bg-neutral-100"
-      : "flex rounded-xl px-4 py-3 text-base font-medium text-foreground transition hover:bg-accent";
 
   const triggerClass =
     variant === "hero"
@@ -68,11 +73,11 @@ function MobileSiteNav({ variant, heroScrolled = false }: MobileNavProps) {
         <nav className="mt-6 flex flex-col gap-1">
           {nav.map((n) =>
             n.external ? (
-              <a key={n.label} href={n.to} className={menuLinkClass} onClick={close}>
+              <a key={n.label} href={n.to} className={mobileNavLinkClass} onClick={close}>
                 {n.label}
               </a>
             ) : (
-              <Link key={n.label} to={n.to} className={menuLinkClass} onClick={close}>
+              <Link key={n.label} to={n.to} className={mobileNavLinkClass} onClick={close}>
                 {n.label}
               </Link>
             ),
@@ -121,9 +126,7 @@ function HeroSiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinkClass = scrolled
-    ? "rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/20 hover:text-white"
-    : "rounded-full px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 hover:text-neutral-900";
+  const navLinkClass = scrolled ? heroNavLinkGlassClass : heroNavLinkSolidClass;
 
   return (
     <header
@@ -159,7 +162,7 @@ function HeroSiteHeader() {
                 key={n.label}
                 to={n.to}
                 className={navLinkClass}
-                activeProps={{ className: scrolled ? "text-white" : "text-neutral-900" }}
+                activeProps={{ className: "text-primary" }}
               >
                 {n.label}
               </Link>
@@ -175,8 +178,8 @@ function HeroSiteHeader() {
             className={cn(
               "hidden rounded-full md:inline-flex",
               scrolled
-                ? "text-white hover:bg-white/20 hover:text-white"
-                : "text-muted-foreground hover:text-foreground",
+                ? "text-white hover:bg-white/20 hover:text-primary"
+                : "text-muted-foreground hover:bg-primary-soft hover:text-primary",
             )}
           >
             <Link to="/login">Log in</Link>
@@ -212,7 +215,7 @@ export function SiteHeader({ variant = "default" }: SiteHeaderProps) {
               <a
                 key={n.label}
                 href={n.to}
-                className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                className={defaultNavLinkClass}
               >
                 {n.label}
               </a>
@@ -220,8 +223,8 @@ export function SiteHeader({ variant = "default" }: SiteHeaderProps) {
               <Link
                 key={n.label}
                 to={n.to}
-                className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                activeProps={{ className: "text-foreground" }}
+                className={defaultNavLinkClass}
+                activeProps={{ className: "text-primary" }}
               >
                 {n.label}
               </Link>
@@ -233,7 +236,7 @@ export function SiteHeader({ variant = "default" }: SiteHeaderProps) {
           <Button
             asChild
             variant="ghost"
-            className="hidden rounded-full text-muted-foreground hover:text-foreground md:inline-flex"
+            className="hidden rounded-full text-muted-foreground hover:bg-primary-soft hover:text-primary md:inline-flex"
           >
             <Link to="/login">Log in</Link>
           </Button>
