@@ -153,6 +153,7 @@ function DashboardHome() {
   const [followUpsHint, setFollowUpsHint] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [openFollowUpCount, setOpenFollowUpCount] = useState(0);
+  const [displayName, setDisplayName] = useState("");
 
   const {
     state: activationState,
@@ -171,6 +172,19 @@ function DashboardHome() {
     aiAssistantOffline,
     refresh: refreshSystemStatus,
   } = useLynkSystemStatus();
+
+  useEffect(() => {
+    void (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+      setDisplayName(profile?.full_name?.trim() ?? "");
+    })();
+  }, []);
 
   const refreshFollowUps = useCallback(async () => {
     setFollowUpsError(null);
@@ -408,9 +422,11 @@ function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Welcome back{displayName ? `, ${displayName.split(/\s+/)[0]}` : ""}
+          </h1>
           <p className="text-sm text-muted-foreground">
             Here's what Lynk Assistant handled for you.
             {dashboardLive && (
@@ -421,14 +437,16 @@ function DashboardHome() {
             )}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline" className="rounded-full">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center">
+          <Button asChild variant="outline" className="h-10 w-full rounded-full sm:w-auto">
             <Link to="/analytics">
               <BarChart3 className="mr-1 h-4 w-4" /> Analytics
             </Link>
           </Button>
-          <Button asChild className="rounded-full bg-[image:var(--gradient-primary)]">
-            <Link to="/automations">New automation <ArrowRight className="ml-1 h-4 w-4" /></Link>
+          <Button asChild className="h-10 w-full rounded-full bg-[image:var(--gradient-primary)] sm:w-auto">
+            <Link to="/automations">
+              New automation <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </header>
@@ -549,7 +567,7 @@ function DashboardHome() {
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <Select
             value={statusFilter}
             onValueChange={(v) => {
@@ -557,7 +575,7 @@ function DashboardHome() {
               setActivityPage(1);
             }}
           >
-            <SelectTrigger className="h-8 w-auto min-w-[130px] rounded-full text-xs">
+            <SelectTrigger className="h-9 w-full shrink-0 rounded-full text-xs sm:w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -569,13 +587,13 @@ function DashboardHome() {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-0.5 rounded-full border border-input p-0.5">
+          <div className="flex w-full shrink-0 items-center gap-0.5 rounded-full border border-input p-0.5 sm:w-auto">
             {(["all", "today", "7d", "30d"] as DateFilter[]).map((d) => (
               <button
                 key={d}
                 type="button"
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition",
+                  "flex-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition sm:flex-none sm:px-3",
                   dateFilter === d
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-accent",
@@ -591,119 +609,123 @@ function DashboardHome() {
             ))}
           </div>
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={dateFilter === "specific" ? "default" : "outline"}
-                size="sm"
-                className={cn(
-                  "h-8 gap-1.5 rounded-full text-xs font-medium",
-                  dateFilter === "specific" && "bg-primary text-primary-foreground",
-                )}
-              >
-                <CalendarDays className="h-3.5 w-3.5" />
-                {specificDate
-                  ? specificDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-                  : "Pick date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={specificDate}
-                onSelect={(day) => {
-                  setSpecificDate(day);
-                  setDateFilter(day ? "specific" : "all");
+          <div className="grid grid-cols-2 gap-2 sm:contents">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={dateFilter === "specific" ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "h-9 w-full shrink-0 gap-1.5 rounded-full text-xs font-medium sm:w-auto",
+                    dateFilter === "specific" && "bg-primary text-primary-foreground",
+                  )}
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {specificDate
+                    ? specificDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+                    : "Pick date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={specificDate}
+                  onSelect={(day) => {
+                    setSpecificDate(day);
+                    setDateFilter(day ? "specific" : "all");
+                    setActivityPage(1);
+                  }}
+                  disabled={{ after: new Date() }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <div className="relative min-w-0 sm:w-[130px]">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Keyword…"
+                className="h-9 w-full rounded-full pl-8 pr-8 text-xs"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setKeywordFilter(keywordInput);
+                    setActivityPage(1);
+                  }
+                }}
+                onBlur={() => {
+                  if (keywordInput !== keywordFilter) {
+                    setKeywordFilter(keywordInput);
+                    setActivityPage(1);
+                  }
+                }}
+              />
+              {keywordFilter && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setKeywordInput("");
+                    setKeywordFilter("");
+                    setActivityPage(1);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative col-span-2 min-w-0 sm:col-span-1 sm:w-[140px]">
+              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                @
+              </span>
+              <Input
+                placeholder="username…"
+                className="h-9 w-full rounded-full pl-7 pr-8 text-xs"
+                value={usernameInput}
+                onChange={(e) => {
+                  setUsernameInput(e.target.value);
+                  setUsernameFilter(e.target.value);
                   setActivityPage(1);
                 }}
-                disabled={{ after: new Date() }}
-                initialFocus
               />
-            </PopoverContent>
-          </Popover>
+              {usernameFilter && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setUsernameInput("");
+                    setUsernameFilter("");
+                    setActivityPage(1);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
 
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Keyword…"
-              className="h-8 w-[130px] rounded-full pl-8 text-xs"
-              value={keywordInput}
-              onChange={(e) => setKeywordInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setKeywordFilter(keywordInput);
-                  setActivityPage(1);
-                }
-              }}
-              onBlur={() => {
-                if (keywordInput !== keywordFilter) {
-                  setKeywordFilter(keywordInput);
-                  setActivityPage(1);
-                }
-              }}
-            />
-            {keywordFilter && (
-              <button
+            {(statusFilter !== "all" || dateFilter !== "all" || keywordFilter || usernameFilter) && (
+              <Button
                 type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                variant="ghost"
+                size="sm"
+                className="col-span-2 h-9 shrink-0 rounded-full text-xs text-muted-foreground sm:col-span-1"
                 onClick={() => {
+                  setStatusFilter("all");
+                  setDateFilter("all");
+                  setSpecificDate(undefined);
                   setKeywordInput("");
                   setKeywordFilter("");
-                  setActivityPage(1);
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-
-          <div className="relative">
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">@</span>
-            <Input
-              placeholder="username…"
-              className="h-8 w-[140px] rounded-full pl-7 text-xs"
-              value={usernameInput}
-              onChange={(e) => {
-                setUsernameInput(e.target.value);
-                setUsernameFilter(e.target.value);
-                setActivityPage(1);
-              }}
-            />
-            {usernameFilter && (
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => {
                   setUsernameInput("");
                   setUsernameFilter("");
                   setActivityPage(1);
                 }}
               >
-                <X className="h-3 w-3" />
-              </button>
+                Clear all
+              </Button>
             )}
           </div>
-
-          {(statusFilter !== "all" || dateFilter !== "all" || keywordFilter || usernameFilter) && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 rounded-full text-xs text-muted-foreground"
-              onClick={() => {
-                setStatusFilter("all");
-                setDateFilter("all");
-                setSpecificDate(undefined);
-                setKeywordInput("");
-                setKeywordFilter("");
-                setUsernameInput("");
-                setUsernameFilter("");
-                setActivityPage(1);
-              }}
-            >
-              Clear all
-            </Button>
-          )}
         </div>
 
         {eventsError && (

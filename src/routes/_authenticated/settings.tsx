@@ -244,11 +244,12 @@ function SettingsPage() {
           {profileEditing ? (
             <div className="max-w-md space-y-2">
               <Label htmlFor="display-name">Display name</Label>
+              <p className="text-xs text-muted-foreground">Used in your dashboard welcome message.</p>
               <Input
                 id="display-name"
                 type="text"
                 autoComplete="name"
-                placeholder="How we greet you in the app"
+                placeholder="e.g. Amara"
                 value={displayName}
                 onChange={(e) => {
                   setDisplayName(e.target.value);
@@ -265,7 +266,11 @@ function SettingsPage() {
               )}
             </div>
           ) : (
-            <ReadOnlyValue label="Display name" value={savedDisplayName} />
+            <ReadOnlyValue
+              label="Display name"
+              value={savedDisplayName}
+              hint="Used in your dashboard welcome message."
+            />
           )}
         </div>
       </div>

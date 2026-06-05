@@ -118,15 +118,15 @@ function AnalyticsPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <section className="grid items-stretch gap-4 lg:grid-cols-5">
+        <div className="h-full lg:col-span-3">
           <DmTrendChart
             data={trend}
             title={`DMs sent — ${periodLabel}`}
             description={`${trendTotal} outbound ${trendTotal === 1 ? "reply" : "replies"} in this period.`}
           />
         </div>
-        <div className="lg:col-span-2">
+        <div className="h-full lg:col-span-2">
           <DmOutcomeBreakdown periodLabel={periodLabel} period={stats} />
         </div>
       </section>

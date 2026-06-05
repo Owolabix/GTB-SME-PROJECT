@@ -27,7 +27,7 @@ export function DmTrendChart({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="app-panel rounded-2xl border p-6">
+    <div className="app-panel flex h-full flex-col rounded-2xl border p-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold">{title}</h2>
