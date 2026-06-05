@@ -12,6 +12,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, Loader2, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -191,9 +192,8 @@ function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 id="login-password"
-                type="password"
                 autoComplete="current-password"
                 required
                 minLength={6}

@@ -136,16 +136,25 @@ function Hero() {
 function Marquee() {
   const items = ["@urban_nest", "@luxe_interiors", "@studio_m", "@design_daily", "@curated_home", "@oak.studio"];
   return (
-    <div className="border-y border-border/60 bg-secondary/40 py-6">
+    <div
+      data-landing-marquee
+      className="border-y border-border/60 bg-secondary/40 py-6"
+    >
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           Loved by creators &amp; storefront owners
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-base font-semibold text-foreground/70">
+        <ul className="mx-auto mt-4 grid max-w-xs grid-cols-2 gap-x-6 gap-y-4 sm:max-w-none sm:grid-cols-3 sm:gap-x-6 md:flex md:flex-row md:flex-wrap md:justify-center md:gap-x-10 md:gap-y-3">
           {items.map((i) => (
-            <span key={i} className="flex items-center gap-1.5"><Instagram className="h-4 w-4 text-primary/70" /> {i}</span>
+            <li
+              key={i}
+              className="flex min-w-0 items-center justify-start gap-1.5 text-sm font-semibold text-foreground/70 md:text-base"
+            >
+              <Instagram className="h-4 w-4 shrink-0 text-primary/70" aria-hidden />
+              <span className="truncate">{i}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   );

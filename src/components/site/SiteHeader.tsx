@@ -103,6 +103,59 @@ function MobileSiteNav({ variant, heroScrolled = false }: MobileNavProps) {
   );
 }
 
+function DefaultSiteHeader({ fixed = false }: { fixed?: boolean }) {
+  return (
+    <header
+      className={cn(
+        "inset-x-0 top-0 border-b border-border/60 bg-background/80 backdrop-blur-xl transition-shadow duration-300",
+        fixed ? "fixed z-50" : "sticky z-40",
+      )}
+    >
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <Link to="/" className="flex items-center">
+          <Logo />
+        </Link>
+        <nav className="hidden items-center gap-1 md:flex">
+          {nav.map((n) =>
+            n.external ? (
+              <a key={n.label} href={n.to} className={defaultNavLinkClass}>
+                {n.label}
+              </a>
+            ) : (
+              <Link
+                key={n.label}
+                to={n.to}
+                className={defaultNavLinkClass}
+                activeProps={{ className: "text-primary" }}
+              >
+                {n.label}
+              </Link>
+            ),
+          )}
+        </nav>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <MobileSiteNav variant="default" />
+          <Button
+            asChild
+            variant="ghost"
+            className="hidden rounded-full text-muted-foreground hover:bg-primary-soft hover:text-primary md:inline-flex"
+          >
+            <Link to="/login">Log in</Link>
+          </Button>
+          <Button
+            asChild
+            className="hidden rounded-full bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)] hover:opacity-95 md:inline-flex"
+          >
+            <Link to="/signup">
+              Sign up <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 function HeroSiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(false);
@@ -126,15 +179,14 @@ function HeroSiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  if (pastHero) {
+    return <DefaultSiteHeader fixed />;
+  }
+
   const navLinkClass = scrolled ? heroNavLinkGlassClass : heroNavLinkSolidClass;
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 px-4 pt-4 transition-[transform,opacity] duration-300 ease-out sm:px-6 sm:pt-5",
-        pastHero && "-translate-y-full opacity-0 pointer-events-none",
-      )}
-    >
+    <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4 transition-all duration-300 ease-out sm:px-6 sm:pt-5">
       <div
         className={cn(
           "mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-full px-3 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] sm:px-4 sm:py-2.5",
@@ -203,53 +255,5 @@ export function SiteHeader({ variant = "default" }: SiteHeaderProps) {
     return <HeroSiteHeader />;
   }
 
-  return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <Link to="/" className="flex items-center">
-          <Logo />
-        </Link>
-        <nav className="hidden items-center gap-1 md:flex">
-          {nav.map((n) =>
-            n.external ? (
-              <a
-                key={n.label}
-                href={n.to}
-                className={defaultNavLinkClass}
-              >
-                {n.label}
-              </a>
-            ) : (
-              <Link
-                key={n.label}
-                to={n.to}
-                className={defaultNavLinkClass}
-                activeProps={{ className: "text-primary" }}
-              >
-                {n.label}
-              </Link>
-            ),
-          )}
-        </nav>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <MobileSiteNav variant="default" />
-          <Button
-            asChild
-            variant="ghost"
-            className="hidden rounded-full text-muted-foreground hover:bg-primary-soft hover:text-primary md:inline-flex"
-          >
-            <Link to="/login">Log in</Link>
-          </Button>
-          <Button
-            asChild
-            className="hidden rounded-full bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)] hover:opacity-95 md:inline-flex"
-          >
-            <Link to="/signup">
-              Sign up <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </header>
-  );
+  return <DefaultSiteHeader />;
 }

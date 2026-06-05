@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -148,9 +149,8 @@ function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="reset-password">New password</Label>
-                <Input
+                <PasswordInput
                   id="reset-password"
-                  type="password"
                   autoComplete="new-password"
                   required
                   minLength={6}
@@ -161,9 +161,8 @@ function ResetPasswordPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="reset-confirm">Confirm password</Label>
-                <Input
+                <PasswordInput
                   id="reset-confirm"
-                  type="password"
                   autoComplete="new-password"
                   required
                   minLength={6}
