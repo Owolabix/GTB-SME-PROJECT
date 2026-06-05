@@ -65,18 +65,23 @@ function ForgotPasswordPage() {
             </span>
             Reset password
           </div>
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight md:text-3xl">Forgot your password?</h1>
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight md:text-2xl">Forgot your password?</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Enter the email you used to sign up. We&apos;ll send a link to choose a new password.
           </p>
 
           {sent ? (
             <div className="mt-8 space-y-4">
-              <p className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                If an account exists for <span className="font-medium">{email.trim()}</span>, check your inbox
-                for a reset link. It may take a minute to arrive.
-              </p>
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 px-3 py-3">
+                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <div className="min-w-0 text-sm leading-relaxed text-foreground">
+                  <p>
+                    If an account exists for the email below, check your inbox for a reset link. It may
+                    take a minute to arrive.
+                  </p>
+                  <p className="mt-2 break-words font-medium text-foreground">{email.trim()}</p>
+                </div>
+              </div>
               <Button asChild variant="outline" className="w-full rounded-full">
                 <Link to="/login">Back to log in</Link>
               </Button>
