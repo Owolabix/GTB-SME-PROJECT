@@ -11,6 +11,11 @@ import { ArrowRight, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getClientSession, isBrowserAuthContext } from "@/lib/authSession";
 import { getPostAuthPath } from "@/lib/postAuthRedirect";
+import {
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_MIN_LENGTH_HINT,
+  validatePassword,
+} from "@/lib/passwordPolicy";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -87,12 +92,14 @@ function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    if (password !== confirm) {
-      setError("Passwords do not match.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+
+    if (password !== confirm) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -153,10 +160,10 @@ function ResetPasswordPage() {
                   id="reset-password"
                   autoComplete="new-password"
                   required
-                  minLength={6}
+                  minLength={MIN_PASSWORD_LENGTH}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min 6 characters"
+                  placeholder={PASSWORD_MIN_LENGTH_HINT}
                 />
               </div>
               <div className="grid gap-2">
@@ -165,7 +172,7 @@ function ResetPasswordPage() {
                   id="reset-confirm"
                   autoComplete="new-password"
                   required
-                  minLength={6}
+                  minLength={MIN_PASSWORD_LENGTH}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Repeat password"

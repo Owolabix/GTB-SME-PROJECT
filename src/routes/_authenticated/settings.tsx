@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Loader2, Check, Store, Pencil } from "lucide-react";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
+import { ChangePasswordSection } from "@/components/settings/ChangePasswordSection";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Lynk Assistant — Settings" }] }),
@@ -428,6 +429,8 @@ function SettingsPage() {
           </div>
         )}
       </div>
+
+      <ChangePasswordSection email={email} />
 
       <DeleteAccountSection email={email} />
     </div>

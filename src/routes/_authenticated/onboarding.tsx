@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { notifyStoreSetupChanged } from "@/lib/storeSetup";
+import { SetupStepIndicator } from "@/components/onboarding/SetupStepIndicator";
 import { ArrowRight, Instagram, Loader2, Store } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -118,6 +119,7 @@ function OnboardingPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl py-2 md:py-4">
+      <SetupStepIndicator currentStep={2} />
       <div className="app-panel rounded-2xl border p-6 shadow-[var(--shadow-card)] sm:p-8">
         <div className="flex items-center gap-3 text-sm font-medium text-primary">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft">
@@ -130,9 +132,16 @@ function OnboardingPage() {
           Tell us about your store
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Step 2 of setup — core store details for the AI assistant. Once you finish here, add
-          returns, delivery, and payment answers on the{" "}
-          <span className="font-medium text-foreground">FAQs</span> page.
+          Core store details for the AI assistant. After this, add returns, delivery, and payment
+          answers on the{" "}
+          <Link to="/faqs" className="font-medium text-primary hover:underline">
+            FAQs
+          </Link>{" "}
+          page — then create your first automation from{" "}
+          <Link to="/automations" className="font-medium text-primary hover:underline">
+            Automations
+          </Link>
+          .
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">

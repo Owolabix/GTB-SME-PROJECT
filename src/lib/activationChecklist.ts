@@ -3,6 +3,7 @@ const STORAGE_KEY = "lynk_activation_checklist_v1";
 export type ActivationChecklistState = {
   instagramConnected: boolean;
   hasAutomation: boolean;
+  hasFaqs: boolean;
   hasDmActivity: boolean;
   instagramUsername: string | null;
 };
@@ -58,6 +59,7 @@ export function activationProgress(state: ActivationChecklistState, prefs: Activ
   let done = 0;
   if (state.instagramConnected) done += 1;
   if (state.hasAutomation) done += 1;
+  if (state.hasFaqs) done += 1;
   if (state.hasDmActivity || prefs.testStepSkipped) done += 1;
-  return { done, total: 3 };
+  return { done, total: 4 };
 }

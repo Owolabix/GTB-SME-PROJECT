@@ -7,7 +7,9 @@ import { PeriodSelector } from "@/components/analytics/PeriodSelector";
 import { useAnalyticsMetrics } from "@/hooks/use-analytics-metrics";
 import type { AnalyticsPeriod } from "@/lib/analyticsPeriod";
 import { analyticsPeriodLabel } from "@/lib/analyticsPeriod";
+import { downloadAnalyticsCsv } from "@/lib/analyticsExport";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Workflow,
   Plug,
@@ -17,6 +19,7 @@ import {
   Sparkles,
   Bot,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
@@ -50,7 +53,27 @@ function AnalyticsPage() {
             )}
           </p>
         </div>
-        <PeriodSelector value={period} onChange={setPeriod} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-full"
+            disabled={loading || Boolean(error)}
+            onClick={() =>
+              downloadAnalyticsCsv({
+                period,
+                periodLabel,
+                metrics,
+                trend,
+              })
+            }
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            Export CSV
+          </Button>
+          <PeriodSelector value={period} onChange={setPeriod} />
+        </div>
       </header>
 
       {error && (

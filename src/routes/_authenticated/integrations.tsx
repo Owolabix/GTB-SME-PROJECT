@@ -23,6 +23,8 @@ import {
   markIntegrationsReturnToOnboarding,
   shouldReturnToOnboardingAfterIntegrations,
 } from "@/lib/onboardingIntegrationsReturn";
+import { SetupStepIndicator } from "@/components/onboarding/SetupStepIndicator";
+import { useStoreSetupComplete } from "@/hooks/use-store-setup-complete";
 import { ArrowRight, Instagram, Loader2, Plug, CheckCircle2, Trash2 } from "lucide-react";
 
 const integrationsSearchSchema = z.object({
@@ -109,6 +111,8 @@ function metaAppAccessHint(oauthError: string, description: string): string | nu
 function IntegrationsPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const { storeSetupComplete, setupLoading } = useStoreSetupComplete();
+  const showSetupSteps = !setupLoading && !storeSetupComplete;
   const [onboardingReturn, setOnboardingReturn] = useState(
     () =>
       isOnboardingReturnSearch(search.returnTo) ||
@@ -356,6 +360,12 @@ function IntegrationsPage() {
 
   return (
     <div className="space-y-6">
+      {showSetupSteps && (
+        <div className="mx-auto w-full max-w-xl">
+          <SetupStepIndicator currentStep={1} />
+        </div>
+      )}
+
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
         <p className="text-sm text-muted-foreground">

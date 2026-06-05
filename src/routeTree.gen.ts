@@ -31,6 +31,7 @@ import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authentica
 import { Route as ApiStorefrontCatalogueRouteImport } from './routes/api/storefront/catalogue'
 import { Route as ApiDmResolveHandlesRouteImport } from './routes/api/dm/resolve-handles'
 import { Route as ApiDmPickUpRouteImport } from './routes/api/dm/pick-up'
+import { Route as ApiAuthVerifySignupEligibilityRouteImport } from './routes/api/auth/verify-signup-eligibility'
 import { Route as ApiAccountDeleteRouteImport } from './routes/api/account/delete'
 import { Route as ApiPublicWebhooksInstagramRouteImport } from './routes/api/public/webhooks/instagram'
 
@@ -145,6 +146,12 @@ const ApiDmPickUpRoute = ApiDmPickUpRouteImport.update({
   path: '/api/dm/pick-up',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthVerifySignupEligibilityRoute =
+  ApiAuthVerifySignupEligibilityRouteImport.update({
+    id: '/api/auth/verify-signup-eligibility',
+    path: '/api/auth/verify-signup-eligibility',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAccountDeleteRoute = ApiAccountDeleteRouteImport.update({
   id: '/api/account/delete',
   path: '/api/account/delete',
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/owner-follow-ups': typeof ApiOwnerFollowUpsRoute
   '/api/account/delete': typeof ApiAccountDeleteRoute
+  '/api/auth/verify-signup-eligibility': typeof ApiAuthVerifySignupEligibilityRoute
   '/api/dm/pick-up': typeof ApiDmPickUpRoute
   '/api/dm/resolve-handles': typeof ApiDmResolveHandlesRoute
   '/api/storefront/catalogue': typeof ApiStorefrontCatalogueRoute
@@ -202,6 +210,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/owner-follow-ups': typeof ApiOwnerFollowUpsRoute
   '/api/account/delete': typeof ApiAccountDeleteRoute
+  '/api/auth/verify-signup-eligibility': typeof ApiAuthVerifySignupEligibilityRoute
   '/api/dm/pick-up': typeof ApiDmPickUpRoute
   '/api/dm/resolve-handles': typeof ApiDmResolveHandlesRoute
   '/api/storefront/catalogue': typeof ApiStorefrontCatalogueRoute
@@ -229,6 +238,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/owner-follow-ups': typeof ApiOwnerFollowUpsRoute
   '/api/account/delete': typeof ApiAccountDeleteRoute
+  '/api/auth/verify-signup-eligibility': typeof ApiAuthVerifySignupEligibilityRoute
   '/api/dm/pick-up': typeof ApiDmPickUpRoute
   '/api/dm/resolve-handles': typeof ApiDmResolveHandlesRoute
   '/api/storefront/catalogue': typeof ApiStorefrontCatalogueRoute
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/owner-follow-ups'
     | '/api/account/delete'
+    | '/api/auth/verify-signup-eligibility'
     | '/api/dm/pick-up'
     | '/api/dm/resolve-handles'
     | '/api/storefront/catalogue'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/owner-follow-ups'
     | '/api/account/delete'
+    | '/api/auth/verify-signup-eligibility'
     | '/api/dm/pick-up'
     | '/api/dm/resolve-handles'
     | '/api/storefront/catalogue'
@@ -307,6 +319,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/owner-follow-ups'
     | '/api/account/delete'
+    | '/api/auth/verify-signup-eligibility'
     | '/api/dm/pick-up'
     | '/api/dm/resolve-handles'
     | '/api/storefront/catalogue'
@@ -326,6 +339,7 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   ApiOwnerFollowUpsRoute: typeof ApiOwnerFollowUpsRoute
   ApiAccountDeleteRoute: typeof ApiAccountDeleteRoute
+  ApiAuthVerifySignupEligibilityRoute: typeof ApiAuthVerifySignupEligibilityRoute
   ApiDmPickUpRoute: typeof ApiDmPickUpRoute
   ApiDmResolveHandlesRoute: typeof ApiDmResolveHandlesRoute
   ApiStorefrontCatalogueRoute: typeof ApiStorefrontCatalogueRoute
@@ -488,6 +502,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDmPickUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/verify-signup-eligibility': {
+      id: '/api/auth/verify-signup-eligibility'
+      path: '/api/auth/verify-signup-eligibility'
+      fullPath: '/api/auth/verify-signup-eligibility'
+      preLoaderRoute: typeof ApiAuthVerifySignupEligibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/account/delete': {
       id: '/api/account/delete'
       path: '/api/account/delete'
@@ -544,6 +565,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiOwnerFollowUpsRoute: ApiOwnerFollowUpsRoute,
   ApiAccountDeleteRoute: ApiAccountDeleteRoute,
+  ApiAuthVerifySignupEligibilityRoute: ApiAuthVerifySignupEligibilityRoute,
   ApiDmPickUpRoute: ApiDmPickUpRoute,
   ApiDmResolveHandlesRoute: ApiDmResolveHandlesRoute,
   ApiStorefrontCatalogueRoute: ApiStorefrontCatalogueRoute,

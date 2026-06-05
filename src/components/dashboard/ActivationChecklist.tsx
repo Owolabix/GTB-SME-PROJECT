@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Circle,
   Instagram,
+  HelpCircle,
   MessageCircle,
   Plug,
   Sparkles,
@@ -65,6 +66,19 @@ export function ActivationChecklist({
         <Button asChild size="sm" variant="outline" className="rounded-full">
           <Link to="/automations">
             <Workflow className="mr-1 h-4 w-4" /> Create automation
+          </Link>
+        </Button>
+      ) : undefined,
+    },
+    {
+      id: "faqs",
+      title: "Add store FAQs",
+      description: "Returns, delivery, and payment answers help the AI reply accurately when keywords don’t match.",
+      done: state.hasFaqs,
+      action: !state.hasFaqs ? (
+        <Button asChild size="sm" variant="outline" className="rounded-full">
+          <Link to="/faqs">
+            <HelpCircle className="mr-1 h-4 w-4" /> Add FAQs
           </Link>
         </Button>
       ) : undefined,
