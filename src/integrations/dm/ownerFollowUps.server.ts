@@ -6,6 +6,7 @@ import {
   type OwnerFollowUp,
 } from "@/lib/ownerFollowUps";
 import { parseDmEventPayload } from "@/lib/dmEventDisplay";
+import { resumeThread } from "@/integrations/dm/conversationMode.server";
 
 function supabaseForUserJwt(accessToken: string) {
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
@@ -122,12 +123,123 @@ async function backfillFollowUpsFromDmEvents(scope: MerchantScope): Promise<void
   }
 }
 
+function isManualModeRowActive(row: {
+  mode: string;
+  manual_until: string | null;
+}): boolean {
+  if (row.mode !== "manual") return false;
+  if (!row.manual_until) return true;
+  return new Date(row.manual_until).getTime() > Date.now();
+}
+
+/** Ensure a dashboard row exists whenever a customer thread is in owner handoff. */
+export async function ensureOpenFollowUpForCustomer(
+  merchantScopedId: string,
+  instagramCustomerId: string,
+  summary?: string,
+): Promise<void> {
+  const { data: existing } = await supabaseAdmin
+    .from("owner_follow_ups")
+    .select("id, status")
+    .eq("instagram_customer_id", instagramCustomerId)
+    .eq("merchant_scoped_id", merchantScopedId);
+
+  if (existing?.some((r) => isOpenFollowUpStatus(r.status))) return;
+
+  await supabaseAdmin.from("owner_follow_ups").insert({
+    merchant_scoped_id: merchantScopedId,
+    instagram_customer_id: instagramCustomerId,
+    summary: (
+      summary ?? "Customer awaiting owner reply (handoff active)"
+    ).slice(0, 500),
+    status: "open",
+  });
+}
+
+/** Paused threads without a follow-up row are invisible on the dashboard — backfill them. */
+async function backfillFollowUpsFromPausedThreads(scope: MerchantScope): Promise<void> {
+  const merchantForInsert = scope.primaryIgUserId ?? scope.userId;
+
+  const { data: paused } = await supabaseAdmin
+    .from("conversation_modes")
+    .select("merchant_scoped_id, instagram_customer_id, mode, manual_until")
+    .in("merchant_scoped_id", scope.scopeIds)
+    .eq("mode", "manual");
+
+  for (const row of paused ?? []) {
+    if (!isManualModeRowActive(row)) continue;
+
+    const merchantScopedId = scope.scopeIds.includes(row.merchant_scoped_id)
+      ? row.merchant_scoped_id
+      : merchantForInsert;
+
+    await ensureOpenFollowUpForCustomer(
+      merchantScopedId,
+      row.instagram_customer_id,
+      "Customer awaiting owner reply (handoff active)",
+    );
+  }
+}
+
+/** dm_events logged while paused but before follow-up insert landed. */
+async function backfillFollowUpsFromPausedEvents(scope: MerchantScope): Promise<void> {
+  const merchantForInsert = scope.primaryIgUserId ?? scope.userId;
+  const since = new Date(Date.now() - BACKFILL_MAX_AGE_MS).toISOString();
+
+  const { data: events } = await supabaseAdmin
+    .from("dm_events")
+    .select("trigger_payload, error, created_at")
+    .eq("user_id", scope.userId)
+    .or(
+      "error.ilike.%Thread paused%,error.ilike.%Escalated to owner%,error.ilike.%owner follow-up created%",
+    )
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(40);
+
+  for (const event of events ?? []) {
+    const parsed = parseDmEventPayload(event.trigger_payload);
+    if (!parsed.senderId) continue;
+
+    const { data: modeRow } = await supabaseAdmin
+      .from("conversation_modes")
+      .select("mode, manual_until")
+      .eq("instagram_customer_id", parsed.senderId)
+      .in("merchant_scoped_id", scope.scopeIds)
+      .maybeSingle();
+
+    if (!modeRow || !isManualModeRowActive(modeRow)) continue;
+
+    const { data: existing } = await supabaseAdmin
+      .from("owner_follow_ups")
+      .select("id, status")
+      .eq("instagram_customer_id", parsed.senderId)
+      .in("merchant_scoped_id", scope.scopeIds);
+
+    if (existing?.some((r) => isOpenFollowUpStatus(r.status))) continue;
+
+    const summary =
+      parsed.messagePreview?.trim() ||
+      "Customer needs your attention (escalated from Instagram DM)";
+
+    await supabaseAdmin.from("owner_follow_ups").insert({
+      merchant_scoped_id: merchantForInsert,
+      instagram_customer_id: parsed.senderId,
+      summary: summary.slice(0, 500),
+      status: "open",
+      created_at: event.created_at ?? new Date().toISOString(),
+    });
+  }
+}
+
 export async function loadOwnerFollowUpsForUser(
   accessToken: string,
   opts?: { openOnly?: boolean },
 ): Promise<OwnerFollowUp[]> {
   const scope = await getMerchantScope(accessToken);
   await backfillFollowUpsFromDmEvents(scope);
+  await backfillFollowUpsFromPausedThreads(scope);
+  await backfillFollowUpsFromPausedEvents(scope);
 
   const { data, error } = await supabaseAdmin
     .from("owner_follow_ups")
@@ -150,6 +262,18 @@ export async function markOwnerFollowUpDoneForUser(
   followUpId: string,
 ): Promise<void> {
   const scope = await getMerchantScope(accessToken);
+  const { data: row, error: fetchErr } = await supabaseAdmin
+    .from("owner_follow_ups")
+    .select("id,merchant_scoped_id,instagram_customer_id")
+    .eq("id", followUpId)
+    .in("merchant_scoped_id", scope.scopeIds)
+    .maybeSingle();
+
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!row) {
+    throw new Error("Follow-up not found or already resolved.");
+  }
+
   const { data, error } = await supabaseAdmin
     .from("owner_follow_ups")
     .update({ status: "done" })
@@ -161,4 +285,10 @@ export async function markOwnerFollowUpDoneForUser(
   if (!data?.length) {
     throw new Error("Follow-up not found or already resolved.");
   }
+
+  const merchantScopedId =
+    scope.primaryIgUserId && scope.scopeIds.includes(row.merchant_scoped_id)
+      ? row.merchant_scoped_id
+      : scope.primaryIgUserId ?? row.merchant_scoped_id;
+  await resumeThread(merchantScopedId, row.instagram_customer_id);
 }

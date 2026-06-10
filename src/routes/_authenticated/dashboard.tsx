@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import type { DmActivityRow } from "@/lib/dmActivity";
 import {
@@ -38,7 +39,6 @@ import { useActivationChecklist } from "@/hooks/use-activation-checklist";
 import { useStoreSetupComplete } from "@/hooks/use-store-setup-complete";
 import { useLynkSystemStatus } from "@/hooks/use-lynk-system-status";
 import {
-  ArrowRight,
   BarChart3,
   BellRing,
   CalendarDays,
@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 
 const ACTIVITY_PAGE_SIZE = 5;
+const FOLLOW_UP_PAGE_SIZE = 5;
 
 type StatusFilter = "all" | "auto_replied" | "ai_replied" | "needs_you" | "failed";
 type DateFilter = "all" | "today" | "7d" | "30d" | "specific";
@@ -128,12 +129,21 @@ async function fetchInstagramHandles(
   }
 }
 
+const dashboardSearchSchema = z.object({
+  focus: z.enum(["follow-ups", "activity"]).optional(),
+  status: z.enum(["all", "auto_replied", "ai_replied", "needs_you", "failed"]).optional(),
+});
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  validateSearch: (raw) =>
+    dashboardSearchSchema.parse(typeof raw === "object" && raw !== null ? raw : {}),
   head: () => ({ meta: [{ title: "Lynk Assistant — Dashboard" }] }),
   component: DashboardHome,
 });
 
 function DashboardHome() {
+  const { focus, status: statusFromUrl } = Route.useSearch();
+  const scrolledRef = useRef<string | null>(null);
   const [events, setEvents] = useState<DmActivityRow[]>([]);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [activityPage, setActivityPage] = useState(1);
@@ -141,7 +151,7 @@ function DashboardHome() {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [pickUpId, setPickUpId] = useState<string | null>(null);
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(statusFromUrl ?? "all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [specificDate, setSpecificDate] = useState<Date | undefined>();
   const [keywordFilter, setKeywordFilter] = useState("");
@@ -152,6 +162,8 @@ function DashboardHome() {
   const [followUpsError, setFollowUpsError] = useState<string | null>(null);
   const [followUpsHint, setFollowUpsHint] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [followUpPage, setFollowUpPage] = useState(1);
+  const [followUpsExpanded, setFollowUpsExpanded] = useState(false);
   const [openFollowUpCount, setOpenFollowUpCount] = useState(0);
   const [displayName, setDisplayName] = useState("");
 
@@ -172,6 +184,56 @@ function DashboardHome() {
     aiAssistantOffline,
     refresh: refreshSystemStatus,
   } = useLynkSystemStatus();
+
+  useEffect(() => {
+    if (statusFromUrl) setStatusFilter(statusFromUrl);
+  }, [statusFromUrl]);
+
+  useEffect(() => {
+    if (!focus) return;
+    const key = `${focus}:${statusFromUrl ?? ""}`;
+    if (scrolledRef.current === key) return;
+    scrolledRef.current = key;
+
+    if (focus === "follow-ups") setFollowUpsExpanded(true);
+
+    const targetId = focus === "follow-ups" ? "owner-follow-ups" : "dm-activity";
+    const timer = window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [focus, statusFromUrl]);
+
+  const followUpTotalCount = followUps.length;
+  const followUpPageItems = followUps.slice(
+    (followUpPage - 1) * FOLLOW_UP_PAGE_SIZE,
+    followUpPage * FOLLOW_UP_PAGE_SIZE,
+  );
+  const visibleFollowUpItems = followUpsExpanded ? followUps : followUpPageItems;
+
+  useEffect(() => {
+    if (followUpsExpanded) return;
+    const totalPages = Math.max(1, Math.ceil(followUpTotalCount / FOLLOW_UP_PAGE_SIZE));
+    if (followUpPage > totalPages) setFollowUpPage(totalPages);
+  }, [followUpTotalCount, followUpPage, followUpsExpanded]);
+
+  useEffect(() => {
+    if (openFollowUpCount === 0) setFollowUpsExpanded(false);
+  }, [openFollowUpCount]);
+
+  function scrollToFollowUps() {
+    document.getElementById("owner-follow-ups")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function openAllFollowUps() {
+    setFollowUpsExpanded(true);
+    window.setTimeout(scrollToFollowUps, 50);
+  }
+
+  function collapseFollowUps() {
+    setFollowUpsExpanded(false);
+    setFollowUpPage(1);
+  }
 
   useEffect(() => {
     void (async () => {
@@ -437,15 +499,25 @@ function DashboardHome() {
             )}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center">
-          <Button asChild variant="outline" className="h-10 w-full rounded-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+          {openFollowUpCount > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="relative h-10 rounded-full px-3"
+              onClick={openAllFollowUps}
+              aria-label={`View all ${openFollowUpCount} open follow-up${openFollowUpCount === 1 ? "" : "s"}`}
+            >
+              <BellRing className="h-4 w-4" />
+              <span className="ml-1.5 hidden sm:inline">Follow-ups</span>
+              <span className="ml-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-warning px-1 text-[10px] font-bold text-warning-foreground sm:ml-2">
+                {openFollowUpCount > 99 ? "99+" : openFollowUpCount}
+              </span>
+            </Button>
+          )}
+          <Button asChild variant="outline" className="h-10 rounded-full">
             <Link to="/analytics">
               <BarChart3 className="mr-1 h-4 w-4" /> Analytics
-            </Link>
-          </Button>
-          <Button asChild className="h-10 w-full rounded-full bg-[image:var(--gradient-primary)] sm:w-auto">
-            <Link to="/automations">
-              New automation <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -468,21 +540,8 @@ function DashboardHome() {
         />
       )}
 
-      {openFollowUpCount > 0 && (
-        <Alert className="border-warning/40 bg-warning/5">
-          <AlertTitle>{openFollowUpCount} follow-up{openFollowUpCount === 1 ? "" : "s"} need you</AlertTitle>
-          <AlertDescription>
-            Scroll down to respond, or check{" "}
-            <Link to="/analytics" className="font-medium text-primary underline-offset-4 hover:underline">
-              Analytics
-            </Link>{" "}
-            for volume and trends.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <section className="app-panel rounded-2xl border p-6">
-        <div className="flex items-start justify-between gap-4">
+      <section id="owner-follow-ups" className="app-panel scroll-mt-6 rounded-2xl border p-6">
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="text-base font-semibold">Owner follow-ups</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -492,6 +551,41 @@ function DashboardHome() {
               )}
             </p>
           </div>
+          {followUpTotalCount > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                {followUpsExpanded
+                  ? `Showing all ${followUpTotalCount}`
+                  : (() => {
+                      const from = (followUpPage - 1) * FOLLOW_UP_PAGE_SIZE + 1;
+                      const to = Math.min(followUpPage * FOLLOW_UP_PAGE_SIZE, followUpTotalCount);
+                      return `Showing ${from}–${to} of ${followUpTotalCount}`;
+                    })()}
+              </p>
+              {!followUpsExpanded && followUpTotalCount > FOLLOW_UP_PAGE_SIZE && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setFollowUpsExpanded(true)}
+                >
+                  View all
+                </Button>
+              )}
+              {followUpsExpanded && followUpTotalCount > FOLLOW_UP_PAGE_SIZE && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={collapseFollowUps}
+                >
+                  Show less
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {followUpsError && (
@@ -505,9 +599,10 @@ function DashboardHome() {
           <p className="mt-4 text-sm text-muted-foreground">{followUpsHint}</p>
         )}
 
-        {followUps.length > 0 ? (
+        {visibleFollowUpItems.length > 0 ? (
+          <>
           <ul className="mt-4 divide-y divide-border">
-            {followUps.map((f) => (
+            {visibleFollowUpItems.map((f) => (
               <li key={f.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -538,6 +633,16 @@ function DashboardHome() {
               </li>
             ))}
           </ul>
+          {!followUpsExpanded && (
+            <ListPagination
+              page={followUpPage}
+              totalCount={followUpTotalCount}
+              pageSize={FOLLOW_UP_PAGE_SIZE}
+              ariaLabel="Owner follow-up pages"
+              onPageChange={setFollowUpPage}
+            />
+          )}
+          </>
         ) : (
           !followUpsError &&
           !followUpsHint && (
@@ -546,7 +651,7 @@ function DashboardHome() {
         )}
       </section>
 
-      <section className="app-panel rounded-2xl border p-6">
+      <section id="dm-activity" className="app-panel scroll-mt-6 rounded-2xl border p-6">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="text-base font-semibold">Recent activity</h2>
@@ -805,11 +910,12 @@ function DashboardHome() {
                 </li>
               ))}
             </ul>
-            <ActivityPagination
+            <ListPagination
               page={activityPage}
               totalCount={activityTotalCount}
               pageSize={ACTIVITY_PAGE_SIZE}
               loading={eventsLoading}
+              ariaLabel="Recent activity pages"
               onPageChange={setActivityPage}
             />
           </>
@@ -848,17 +954,19 @@ function buildActivityPageList(current: number, totalPages: number): (number | "
   return items;
 }
 
-function ActivityPagination({
+function ListPagination({
   page,
   totalCount,
   pageSize,
-  loading,
+  loading = false,
+  ariaLabel,
   onPageChange,
 }: {
   page: number;
   totalCount: number;
   pageSize: number;
-  loading: boolean;
+  loading?: boolean;
+  ariaLabel: string;
   onPageChange: (page: number) => void;
 }) {
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -869,7 +977,7 @@ function ActivityPagination({
   return (
     <nav
       className="mt-4 flex flex-wrap items-center justify-center gap-1"
-      aria-label="Recent activity pages"
+      aria-label={ariaLabel}
     >
       <Button
         type="button"

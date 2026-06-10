@@ -8,6 +8,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const MERCHANT_SCOPED_TABLES = [
   "store_info",
   "owner_follow_ups",
+  "conversation_modes",
   "faqs",
   "sessions",
   "products",

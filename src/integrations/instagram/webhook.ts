@@ -9,6 +9,17 @@ import {
   type AutomationRow,
 } from "@/integrations/instagram/matchAutomation";
 import { forwardDmToCxAssistant } from "@/integrations/cx-assistant/forwardDm";
+import {
+  HANDOFF_ACK,
+  isHumanEscalationRequest,
+  isThreadPaused,
+  pauseForEscalation,
+} from "@/integrations/dm/conversationMode.server";
+import { ensureOpenFollowUpForCustomer } from "@/integrations/dm/ownerFollowUps.server";
+import {
+  isBotOutboundEcho,
+  registerBotOutbound,
+} from "@/integrations/dm/botOutbound.server";
 
 export function verifyMetaWebhookSignature(
   rawBody: string,
@@ -104,7 +115,54 @@ async function recordEvent(
 
 type AutomationContext = Awaited<ReturnType<typeof loadAutomationContext>>;
 
-type DmHandleResult = "ignored" | "automated" | "forwarded_to_ai";
+type DmHandleResult = "ignored" | "automated" | "forwarded_to_ai" | "paused" | "escalated";
+
+async function createOwnerFollowUp(
+  merchantScopedId: string,
+  instagramCustomerId: string,
+  summary: string,
+) {
+  await supabaseAdmin.from("owner_follow_ups").insert({
+    merchant_scoped_id: merchantScopedId,
+    instagram_customer_id: instagramCustomerId,
+    summary: summary.slice(0, 500),
+    status: "open",
+  });
+}
+
+async function handleHumanEscalation(
+  account: IgAccount,
+  event: {
+    senderId: string;
+    text: string;
+    mid: string;
+    raw: unknown;
+  },
+): Promise<DmHandleResult> {
+  const preview = event.text.length > 160 ? `${event.text.slice(0, 160)}…` : event.text;
+
+  const send = await sendInstagramDm(account.access_token, event.senderId, HANDOFF_ACK);
+  if (send.ok) {
+    await registerBotOutbound(account.ig_user_id, event.senderId, send.messageId);
+    await createOwnerFollowUp(
+      account.ig_user_id,
+      event.senderId,
+      `Customer needs human help. Last message: "${preview}"`,
+    );
+    await pauseForEscalation(account.ig_user_id, event.senderId);
+  }
+
+  await recordEvent(account, {
+    automationId: null,
+    igEventId: event.mid,
+    status: send.ok ? "skipped" : "failed",
+    error: send.ok
+      ? "Escalated to owner — bot paused for this customer"
+      : send.message ?? "Escalation ack failed to send",
+    payload: event.raw,
+  });
+  return "escalated";
+}
 
 async function handleInboundDm(
   account: IgAccount,
@@ -117,6 +175,27 @@ async function handleInboundDm(
   },
 ): Promise<DmHandleResult> {
   if (event.senderId === account.ig_user_id) return "ignored";
+
+  if (await isThreadPaused(account.ig_user_id, event.senderId)) {
+    const preview = event.text.length > 160 ? `${event.text.slice(0, 160)}…` : event.text;
+    await ensureOpenFollowUpForCustomer(
+      account.ig_user_id,
+      event.senderId,
+      `Customer needs human help. Last message: "${preview}"`,
+    );
+    await recordEvent(account, {
+      automationId: null,
+      igEventId: event.mid,
+      status: "skipped",
+      error: "Thread paused — owner handling",
+      payload: event.raw,
+    });
+    return "paused";
+  }
+
+  if (isHumanEscalationRequest(event.text)) {
+    return handleHumanEscalation(account, event);
+  }
 
   const match = pickMatchingAutomation(ctx.automations, ctx.messages, {
     triggerType: "dm",
@@ -161,6 +240,9 @@ async function handleInboundDm(
   }
 
   const send = await sendInstagramDm(account.access_token, event.senderId, match.replyBody);
+  if (send.ok) {
+    await registerBotOutbound(account.ig_user_id, event.senderId, send.messageId);
+  }
   await recordEvent(account, {
     automationId: match.automation.id,
     igEventId: event.mid,
@@ -201,6 +283,9 @@ async function handleInboundComment(
   }
 
   const send = await sendInstagramDm(account.access_token, event.commenterId, match.replyBody);
+  if (send.ok) {
+    await registerBotOutbound(account.ig_user_id, event.commenterId, send.messageId);
+  }
   await recordEvent(account, {
     automationId: match.automation.id,
     igEventId: event.commentId,
@@ -208,6 +293,32 @@ async function handleInboundComment(
     error: send.ok ? undefined : send.message,
     payload: event.raw,
   });
+}
+
+async function handleMerchantEcho(
+  account: IgAccount,
+  raw: Record<string, unknown>,
+): Promise<void> {
+  const message = raw.message as Record<string, unknown> | undefined;
+  const mid = typeof message?.mid === "string" ? message.mid : "";
+  const recipient = raw.recipient as { id?: string } | undefined;
+  const customerId = recipient?.id ?? "";
+  const sender = raw.sender as { id?: string } | undefined;
+  const senderId = sender?.id ?? "";
+
+  if (!mid || !customerId || customerId === account.ig_user_id) return;
+  if (senderId && senderId !== account.ig_user_id) return;
+
+  if (await isBotOutboundEcho(mid)) return;
+
+  if (!(await isThreadPaused(account.ig_user_id, customerId))) {
+    await pauseForEscalation(account.ig_user_id, customerId);
+    await ensureOpenFollowUpForCustomer(
+      account.ig_user_id,
+      customerId,
+      "Owner replied manually — bot paused for this customer",
+    );
+  }
 }
 
 /** Process Meta Instagram webhook payload (already signature-verified). */
@@ -233,7 +344,11 @@ export async function processInstagramWebhookPayload(payload: unknown): Promise<
       if (!m || typeof m !== "object") continue;
       const msg = m as Record<string, unknown>;
       const message = msg.message as Record<string, unknown> | undefined;
-      if (!message || message.is_echo === true) continue;
+      if (!message) continue;
+      if (message.is_echo === true) {
+        await handleMerchantEcho(account, msg);
+        continue;
+      }
       const text = typeof message.text === "string" ? message.text : "";
       const mid = typeof message.mid === "string" ? message.mid : "";
       const sender = msg.sender as { id?: string } | undefined;

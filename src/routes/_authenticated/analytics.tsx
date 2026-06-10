@@ -89,24 +89,24 @@ function AnalyticsPage() {
         </h2>
         <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
-            icon={<Workflow className="h-4 w-4" />}
+            icon={<Workflow className="h-5 w-5" />}
             label="Active automations"
             value={metrics.activeAutomations}
             sublabel={`${metrics.totalAutomations} total`}
           />
           <KpiCard
-            icon={<Plug className="h-4 w-4" />}
+            icon={<Plug className="h-5 w-5" />}
             label="IG accounts connected"
             value={metrics.igAccounts}
           />
           <KpiCard
-            icon={<MessageCircle className="h-4 w-4" />}
+            icon={<MessageCircle className="h-5 w-5" />}
             label={`DMs sent (${periodLabel})`}
             value={stats.sent}
             sublabel={metrics.sentToday > 0 ? `${metrics.sentToday} today` : undefined}
           />
           <KpiCard
-            icon={<BellRing className="h-4 w-4" />}
+            icon={<BellRing className="h-5 w-5" />}
             label="Open follow-ups"
             value={metrics.openFollowUps}
             sublabel={
@@ -115,6 +115,9 @@ function AnalyticsPage() {
                 : undefined
             }
             highlight={metrics.openFollowUps > 0}
+            to="/dashboard"
+            search={{ focus: "follow-ups" }}
+            actionHint="View on Home →"
           />
         </div>
       </section>
@@ -125,18 +128,24 @@ function AnalyticsPage() {
         </h2>
         <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
-            icon={<Inbox className="h-4 w-4" />}
+            icon={<Inbox className="h-5 w-5" />}
             label="Inbound triggers"
             value={stats.totalEvents}
           />
-          <KpiCard icon={<Sparkles className="h-4 w-4" />} label="Auto-replied" value={stats.autoReplied} />
-          <KpiCard icon={<Bot className="h-4 w-4" />} label="AI replied" value={stats.aiReplied} />
+          <KpiCard icon={<Sparkles className="h-5 w-5" />} label="Auto-replied" value={stats.autoReplied} />
+          <KpiCard icon={<Bot className="h-5 w-5" />} label="AI replied" value={stats.aiReplied} />
           <KpiCard
-            icon={<AlertTriangle className="h-4 w-4" />}
+            icon={<AlertTriangle className="h-5 w-5" />}
             label="Needs you + failed"
             value={stats.needsYou + stats.failed}
             sublabel={`${stats.needsYou} skipped · ${stats.failed} failed`}
             highlight={stats.needsYou + stats.failed > 0}
+            to="/dashboard"
+            search={{
+              focus: "activity",
+              status: stats.failed > 0 && stats.needsYou === 0 ? "failed" : "needs_you",
+            }}
+            actionHint="View in activity →"
           />
         </div>
       </section>

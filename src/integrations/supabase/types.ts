@@ -111,6 +111,27 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_outbound_mids: {
+        Row: {
+          created_at: string
+          instagram_customer_id: string
+          merchant_scoped_id: string
+          message_id: string
+        }
+        Insert: {
+          created_at?: string
+          instagram_customer_id: string
+          merchant_scoped_id: string
+          message_id: string
+        }
+        Update: {
+          created_at?: string
+          instagram_customer_id?: string
+          merchant_scoped_id?: string
+          message_id?: string
+        }
+        Relationships: []
+      }
       dm_events: {
         Row: {
           automation_id: string | null
@@ -151,6 +172,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      conversation_modes: {
+        Row: {
+          id: string
+          instagram_customer_id: string
+          manual_until: string | null
+          merchant_scoped_id: string
+          mode: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          instagram_customer_id: string
+          manual_until?: string | null
+          merchant_scoped_id: string
+          mode?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          instagram_customer_id?: string
+          manual_until?: string | null
+          merchant_scoped_id?: string
+          mode?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       owner_follow_ups: {
         Row: {
